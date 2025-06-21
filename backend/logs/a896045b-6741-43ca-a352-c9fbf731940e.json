@@ -1,0 +1,21 @@
+{
+  "id": "a896045b-6741-43ca-a352-c9fbf731940e",
+  "tableName": "New Table - 2025-06-21",
+  "date": "2025-06-21",
+  "rows": [
+    {
+      "id": 0,
+      "muscleGroup": "Strength-Focus\ud83c\udfcb\ufe0f",
+      "exercise": "",
+      "sets": [
+        {
+          "reps": "",
+          "weight": ""
+        }
+      ],
+      "notes": "No notes \ud83d\ude0a",
+      "showNotes": false,
+      "weightUnit": "lbs"
+    }
+  ]
+}
