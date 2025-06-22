@@ -1,0 +1,21 @@
+{
+  "id": "dacdc324-2119-4265-8f66-07777862cc4b",
+  "tableName": "New Table - 2025-06-22",
+  "date": "2025-06-22",
+  "rows": [
+    {
+      "id": 0,
+      "muscleGroup": "",
+      "exercise": "",
+      "sets": [
+        {
+          "reps": "",
+          "weight": ""
+        }
+      ],
+      "notes": "",
+      "showNotes": false,
+      "weightUnit": "lbs"
+    }
+  ]
+}
