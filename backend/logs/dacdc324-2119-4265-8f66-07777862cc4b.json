@@ -1,11 +1,11 @@
 {
-  "id": "43efa008-59ef-4698-a5e7-5bbd81b02cb9",
-  "tableName": "Push",
-  "date": "2025-06-21",
+  "id": "dacdc324-2119-4265-8f66-07777862cc4b",
+  "tableName": "New Table - 2025-06-22",
+  "date": "2025-06-22",
   "rows": [
     {
       "id": 0,
-      "muscleGroup": "Strength-Focus\ud83c\udfcb\ufe0f",
+      "muscleGroup": "",
       "exercise": "",
       "sets": [
         {
@@ -13,7 +13,7 @@
           "weight": ""
         }
       ],
-      "notes": "No notes \ud83d\ude0a",
+      "notes": "",
       "showNotes": false,
       "weightUnit": "lbs"
     }
