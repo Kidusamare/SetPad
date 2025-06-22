@@ -103,6 +103,7 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                     type="text"
                     value={muscleGroup}
                     onChange={(e) => setMuscleGroup(e.target.value)}
+                    placeholder="Enter Exersice Focus Here"
                     style={{
                         padding: "0.5rem",
                         width: "100%",
@@ -123,6 +124,7 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                     type="text"
                     value={exercise}
                     onChange={(e) => setExercise(e.target.value)}
+                    placeholder="Name of exersice"
                     style={{
                         padding: "0.5rem",
                         width: "100%",
@@ -263,6 +265,7 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                             rows="3"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
+                            placeholder="No notes"
                             style={{
                                 width: "100%",
                                 marginTop: "0.5rem",
