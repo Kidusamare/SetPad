@@ -1,0 +1,21 @@
+{
+  "id": "2ab2b344-d2e9-4f25-8d50-144928f1f41c",
+  "tableName": "Pull",
+  "date": "2025-06-24",
+  "rows": [
+    {
+      "id": 0,
+      "muscleGroup": "",
+      "exercise": "",
+      "sets": [
+        {
+          "reps": "",
+          "weight": ""
+        }
+      ],
+      "notes": "",
+      "showNotes": false,
+      "weightUnit": "lbs"
+    }
+  ]
+}

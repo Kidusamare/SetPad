@@ -105,7 +105,7 @@ export default function TrainingLogTable() {
     return (
         <div style={{ padding: "2rem", color: "#f5f6fa", background: "#000", minHeight: "100vh" }}>
             <button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/log")}
                 style={buttonStyle}
                 onMouseOver={e => e.currentTarget.style.background = buttonHover}
                 onMouseOut={e => e.currentTarget.style.background = buttonStyle.background}
