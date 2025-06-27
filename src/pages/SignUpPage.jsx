@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../utils/auth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -10,8 +11,9 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
-  const handleSignUp = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -23,7 +25,7 @@ export default function SignUpPage() {
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters long");
       setLoading(false);
       return;
     }
@@ -32,7 +34,8 @@ export default function SignUpPage() {
       await createUserWithEmailAndPassword(auth, email, password);
       navigate("/");
     } catch (error) {
-      setError(error.message);
+      setError("Failed to create account. Please try again.");
+      console.error("Signup error:", error);
     } finally {
       setLoading(false);
     }
@@ -40,39 +43,58 @@ export default function SignUpPage() {
 
   return (
     <div style={{ 
-      background: "#000", 
+      background: theme.background, 
       minHeight: "100vh", 
       display: "flex", 
       alignItems: "center", 
       justifyContent: "center",
-      color: "#f5f6fa"
+      padding: "2rem",
+      transition: "background-color 0.3s ease"
     }}>
       <div style={{
-        background: "#1e1e1e",
-        padding: "2rem",
-        borderRadius: "10px",
+        background: theme.cardBackground,
+        padding: "3rem",
+        borderRadius: "20px",
+        boxShadow: theme.shadow,
+        border: `1px solid ${theme.cardBorder}`,
         width: "100%",
-        maxWidth: "400px"
+        maxWidth: "400px",
+        transition: "background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease"
       }}>
-        <h1 style={{ textAlign: "center", marginBottom: "2rem", color: "#ffd966" }}>
-          Sign Up
+        <h1 style={{ 
+          textAlign: "center", 
+          marginBottom: "2rem",
+          color: theme.accent,
+          fontSize: "2rem",
+          transition: "color 0.3s ease"
+        }}>
+          Create Account
         </h1>
-        
+
         {error && (
           <div style={{
-            background: "#ff4d4f",
-            color: "white",
-            padding: "0.5rem",
-            borderRadius: "5px",
-            marginBottom: "1rem"
+            background: theme.danger,
+            color: "#fff",
+            padding: "1rem",
+            borderRadius: "8px",
+            marginBottom: "1rem",
+            textAlign: "center"
           }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSignUp}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.5rem" }}>Email:</label>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              color: theme.textSecondary,
+              fontWeight: "600",
+              transition: "color 0.3s ease"
+            }}>
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -80,36 +102,59 @@ export default function SignUpPage() {
               required
               style={{
                 width: "100%",
-                padding: "0.5rem",
-                borderRadius: "5px",
-                border: "1px solid #333",
-                background: "#2a2a2a",
-                color: "#f5f6fa"
+                padding: "0.8rem",
+                borderRadius: "8px",
+                border: `1px solid ${theme.inputBorder}`,
+                background: theme.inputBackground,
+                color: theme.text,
+                fontSize: "1rem",
+                boxSizing: "border-box",
+                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
               }}
+              placeholder="Enter your email"
             />
           </div>
 
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.5rem" }}>Password:</label>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              color: theme.textSecondary,
+              fontWeight: "600",
+              transition: "color 0.3s ease"
+            }}>
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength="6"
               style={{
                 width: "100%",
-                padding: "0.5rem",
-                borderRadius: "5px",
-                border: "1px solid #333",
-                background: "#2a2a2a",
-                color: "#f5f6fa"
+                padding: "0.8rem",
+                borderRadius: "8px",
+                border: `1px solid ${theme.inputBorder}`,
+                background: theme.inputBackground,
+                color: theme.text,
+                fontSize: "1rem",
+                boxSizing: "border-box",
+                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
               }}
+              placeholder="Enter your password"
             />
           </div>
 
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.5rem" }}>Confirm Password:</label>
+          <div style={{ marginBottom: "2rem" }}>
+            <label style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              color: theme.textSecondary,
+              fontWeight: "600",
+              transition: "color 0.3s ease"
+            }}>
+              Confirm Password
+            </label>
             <input
               type="password"
               value={confirmPassword}
@@ -117,12 +162,16 @@ export default function SignUpPage() {
               required
               style={{
                 width: "100%",
-                padding: "0.5rem",
-                borderRadius: "5px",
-                border: "1px solid #333",
-                background: "#2a2a2a",
-                color: "#f5f6fa"
+                padding: "0.8rem",
+                borderRadius: "8px",
+                border: `1px solid ${theme.inputBorder}`,
+                background: theme.inputBackground,
+                color: theme.text,
+                fontSize: "1rem",
+                boxSizing: "border-box",
+                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
               }}
+              placeholder="Confirm your password"
             />
           </div>
 
@@ -131,26 +180,52 @@ export default function SignUpPage() {
             disabled={loading}
             style={{
               width: "100%",
-              padding: "0.8rem",
-              background: "#ffd966",
-              color: "#000",
+              padding: "1rem",
+              background: loading ? theme.textMuted : theme.primary,
+              color: "#fff",
               border: "none",
-              borderRadius: "5px",
-              fontWeight: "bold",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              fontWeight: "600",
               cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.7 : 1
+              transition: "background 0.2s ease"
+            }}
+            onMouseOver={e => {
+              if (!loading) e.currentTarget.style.background = theme.primaryHover;
+            }}
+            onMouseOut={e => {
+              if (!loading) e.currentTarget.style.background = theme.primary;
             }}
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "1rem" }}>
+        <div style={{ 
+          textAlign: "center", 
+          marginTop: "2rem",
+          color: theme.textSecondary,
+          transition: "color 0.3s ease"
+        }}>
           Already have an account?{" "}
-          <Link to="/login" style={{ color: "#ffd966" }}>
-            Login
-          </Link>
-        </p>
+          <button
+            onClick={() => navigate("/login")}
+            style={{
+              background: "none",
+              border: "none",
+              color: theme.accent,
+              cursor: "pointer",
+              fontSize: "1rem",
+              fontWeight: "600",
+              textDecoration: "underline",
+              transition: "color 0.2s ease"
+            }}
+            onMouseOver={e => e.currentTarget.style.color = theme.primary}
+            onMouseOut={e => e.currentTarget.style.color = theme.accent}
+          >
+            Log in
+          </button>
+        </div>
       </div>
     </div>
   );

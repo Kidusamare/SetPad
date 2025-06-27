@@ -101,12 +101,87 @@ export default class TrainingLogManager {
     }
   }
 
+  // Get all unique muscle groups from user's logs
+  async getUniqueMuscleGroups() {
+    try {
+      const collectionRef = this.getTablesCollection();
+      const querySnapshot = await getDocs(collectionRef);
+      
+      const muscleGroups = new Set();
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.rows) {
+          data.rows.forEach(row => {
+            if (row.muscleGroup && row.muscleGroup.trim()) {
+              muscleGroups.add(row.muscleGroup.trim());
+            }
+          });
+        }
+      });
+      
+      return Array.from(muscleGroups).sort();
+    } catch (error) {
+      console.error("Error fetching muscle groups:", error);
+      return [];
+    }
+  }
+
+  // Get all unique exercises from user's logs
+  async getUniqueExercises() {
+    try {
+      const collectionRef = this.getTablesCollection();
+      const querySnapshot = await getDocs(collectionRef);
+      
+      const exercises = new Set();
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.rows) {
+          data.rows.forEach(row => {
+            if (row.exercise && row.exercise.trim()) {
+              exercises.add(row.exercise.trim());
+            }
+          });
+        }
+      });
+      
+      return Array.from(exercises).sort();
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+      return [];
+    }
+  }
+
+  // Get exercises for a specific muscle group
+  async getExercisesForMuscleGroup(muscleGroup) {
+    try {
+      const collectionRef = this.getTablesCollection();
+      const querySnapshot = await getDocs(collectionRef);
+      
+      const exercises = new Set();
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.rows) {
+          data.rows.forEach(row => {
+            if (row.muscleGroup === muscleGroup && row.exercise && row.exercise.trim()) {
+              exercises.add(row.exercise.trim());
+            }
+          });
+        }
+      });
+      
+      return Array.from(exercises).sort();
+    } catch (error) {
+      console.error("Error fetching exercises for muscle group:", error);
+      return [];
+    }
+  }
+
   createNewTable() {
     const id = crypto.randomUUID();
     const today = new Date().toISOString().split("T")[0];
     return {
       id,
-      tableName: `New Table - ${today}`,
+      tableName: "New Log",
       date: today,
       rows: [
         {
