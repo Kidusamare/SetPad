@@ -1,16 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/auth";
 import { useTheme } from "../context/ThemeContext";
 import SavedTablesPage from "../components/SavedTablesPage";
+import TrainingLogManager from "../components/TrainingLogManager";
+
+const manager = new TrainingLogManager();
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
 
   const handleOpenSaved = () => {
     navigate("/log");
+  };
+
+  const handleNewLog = async () => {
+    const newTable = manager.createNewTable();
+    await manager.saveTable(newTable);
+    navigate(`/log/${newTable.id}`);
   };
 
   const handleLogout = async () => {
@@ -92,6 +102,75 @@ export default function Dashboard() {
         Logout
       </button>
 
+      <h1 style={{ 
+        fontSize: "2.5rem", 
+        marginBottom: "2rem",
+        color: theme.accent,
+        textAlign: "center",
+        transition: "color 0.3s ease"
+      }}>
+        Welcome to your Dashboard
+      </h1>
+
+      {/* Centered New Log Button */}
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: "3rem"
+      }}>
+        <div style={{
+          position: "relative",
+          width: "200px",
+          height: "70px",
+          background: `linear-gradient(to top, ${theme.accentSecondary}, ${theme.accent}, ${theme.accentHover})`,
+          borderRadius: "50px",
+          border: "none",
+          outline: "none",
+          cursor: "pointer",
+          boxShadow: "0 15px 30px rgba(0, 0, 0, 0.3)",
+          overflow: "hidden",
+          transition: "transform 0.3s ease"
+        }}
+        onMouseEnter={() => setIsHoveringNewLog(true)}
+        onMouseLeave={() => setIsHoveringNewLog(false)}
+        onClick={handleNewLog}
+        >
+          <span style={{
+            position: "absolute",
+            width: "100%",
+            top: isHoveringNewLog ? "-100%" : "50%",
+            left: 0,
+            transform: "translateY(-50%)",
+            fontSize: "16px",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+            color: "#fff",
+            fontWeight: "600",
+            textAlign: "center",
+            transition: "top 0.5s ease"
+          }}>
+            New Log
+          </span>
+          <span style={{
+            position: "absolute",
+            width: "100%",
+            top: isHoveringNewLog ? "50%" : "150%",
+            left: 0,
+            transform: "translateY(-50%)",
+            fontSize: "16px",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+            color: "#fff",
+            fontWeight: "600",
+            textAlign: "center",
+            transition: "top 0.5s ease"
+          }}>
+            Let's Begin
+          </span>
+        </div>
+      </div>
+
       <div
         onClick={handleOpenSaved}
         style={{
@@ -132,21 +211,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h1 style={{ 
-        fontSize: "2.5rem", 
-        marginBottom: "1rem",
-        color: theme.accent,
-        transition: "color 0.3s ease"
-      }}>
-        Welcome to your Dashboard
-      </h1>
       <p style={{ 
         marginTop: "1rem", 
         opacity: 0.7,
         fontSize: "1.1rem",
         lineHeight: "1.6",
         color: theme.textSecondary,
-        transition: "color 0.3s ease"
+        transition: "color 0.3s ease",
+        textAlign: "center"
       }}>
         This space will soon show your analytics, recent logs, and suggested training insights.
       </p>
