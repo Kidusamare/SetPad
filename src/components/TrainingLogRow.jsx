@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react"
 import { useTheme } from "../context/ThemeContext";
+import AutoComplete from "./AutoComplete";
 
-export default function TrainingLogRow({ rowData, onUpdate }) {
+export default function TrainingLogRow({ 
+    rowData, 
+    onUpdate, 
+    muscleGroupSuggestions = [], 
+    exerciseSuggestions = [],
+    onMuscleGroupChange
+}) {
     const { theme } = useTheme();
     const [muscleGroup, setMuscleGroup] = useState(rowData.muscleGroup);
     const [exercise, setExercise] = useState(rowData.exercise);
@@ -47,6 +54,13 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
     const removeSet = (index) => {
         if (sets.length > 1) {
             setSets(sets.filter((_, i) => i !== index));
+        }
+    };
+
+    const handleMuscleGroupChange = (newMuscleGroup) => {
+        setMuscleGroup(newMuscleGroup);
+        if (onMuscleGroupChange) {
+            onMuscleGroupChange(newMuscleGroup);
         }
     };
 
@@ -98,22 +112,11 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                 }}>
                     Muscle Group:
                 </label>
-                <input
-                    type="text"
+                <AutoComplete
                     value={muscleGroup}
-                    onChange={(e) => setMuscleGroup(e.target.value)}
+                    onChange={handleMuscleGroupChange}
                     placeholder="Enter Exercise Focus Here"
-                    style={{
-                        padding: "0.8rem",
-                        width: "100%",
-                        borderRadius: "8px",
-                        border: `1px solid ${theme.inputBorder}`,
-                        background: theme.inputBackground,
-                        color: theme.text,
-                        fontSize: "1rem",
-                        boxSizing: "border-box",
-                        transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
-                    }}
+                    suggestions={muscleGroupSuggestions}
                 />
             </div>
 
@@ -129,22 +132,11 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                 }}>
                     Exercise:
                 </label>
-                <input
-                    type="text"
+                <AutoComplete
                     value={exercise}
-                    onChange={(e) => setExercise(e.target.value)}
+                    onChange={setExercise}
                     placeholder="Name of exercise"
-                    style={{
-                        padding: "0.8rem",
-                        width: "100%",
-                        borderRadius: "8px",
-                        border: `1px solid ${theme.inputBorder}`,
-                        background: theme.inputBackground,
-                        color: theme.text,
-                        fontSize: "1rem",
-                        boxSizing: "border-box",
-                        transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
-                    }}
+                    suggestions={exerciseSuggestions}
                 />
             </div>
 

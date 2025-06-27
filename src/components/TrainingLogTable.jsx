@@ -11,6 +11,9 @@ export default function TrainingLogTable() {
     const navigate = useNavigate();
     const { theme } = useTheme();
     const [log, setLog] = useState(null);
+    const [muscleGroupSuggestions, setMuscleGroupSuggestions] = useState([]);
+    const [exerciseSuggestions, setExerciseSuggestions] = useState([]);
+    const [currentMuscleGroup, setCurrentMuscleGroup] = useState("");
 
     useEffect(() => {
         const loadLog = async () => {
@@ -44,6 +47,48 @@ export default function TrainingLogTable() {
         loadLog();
     }, [id]);
 
+    // Fetch suggestions when component mounts
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            try {
+                const [muscleGroups, exercises] = await Promise.all([
+                    manager.getUniqueMuscleGroups(),
+                    manager.getUniqueExercises()
+                ]);
+                setMuscleGroupSuggestions(muscleGroups);
+                setExerciseSuggestions(exercises);
+            } catch (error) {
+                console.error("Error fetching suggestions:", error);
+            }
+        };
+
+        fetchSuggestions();
+    }, []);
+
+    // Update exercise suggestions when muscle group changes
+    useEffect(() => {
+        const fetchExercisesForMuscleGroup = async () => {
+            if (currentMuscleGroup.trim()) {
+                try {
+                    const exercises = await manager.getExercisesForMuscleGroup(currentMuscleGroup);
+                    setExerciseSuggestions(exercises);
+                } catch (error) {
+                    console.error("Error fetching exercises for muscle group:", error);
+                }
+            } else {
+                // If no muscle group selected, show all exercises
+                try {
+                    const allExercises = await manager.getUniqueExercises();
+                    setExerciseSuggestions(allExercises);
+                } catch (error) {
+                    console.error("Error fetching all exercises:", error);
+                }
+            }
+        };
+
+        fetchExercisesForMuscleGroup();
+    }, [currentMuscleGroup]);
+
     const updateRow = (index, updatedRow) => {
         const newRows = [...log.rows];
         newRows[index] = { ...newRows[index], ...updatedRow };
@@ -72,6 +117,10 @@ export default function TrainingLogTable() {
     const handleRename = (e) => {
         const updated = { ...log, tableName: e.target.value };
         setLog(updated);
+    };
+
+    const handleMuscleGroupChange = (muscleGroup) => {
+        setCurrentMuscleGroup(muscleGroup);
     };
 
     useEffect(() => {
@@ -172,6 +221,9 @@ export default function TrainingLogTable() {
                     key={row.id}
                     rowData={row}
                     onUpdate={(updated) => updateRow(index, updated)}
+                    muscleGroupSuggestions={muscleGroupSuggestions}
+                    exerciseSuggestions={exerciseSuggestions}
+                    onMuscleGroupChange={handleMuscleGroupChange}
                 />
             ))}
 
