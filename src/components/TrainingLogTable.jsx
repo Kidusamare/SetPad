@@ -33,7 +33,7 @@ export default function TrainingLogTable() {
                 };
                 const defaultLog = {
                     id: id,
-                    tableName: `New Log - ${today}`,
+                    tableName: "New Log",
                     date: today,
                     rows: [defaultRow]
                 };

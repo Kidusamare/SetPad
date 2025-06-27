@@ -35,6 +35,18 @@ export default function SavedTablesPage({ previewMode = false }) {
         }
     };
 
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    };
+
     return (
         <div
             style={{
@@ -123,7 +135,7 @@ export default function SavedTablesPage({ previewMode = false }) {
                             key={table.id}
                             style={{
                                 marginBottom: "1rem",
-                                padding: "1rem",
+                                padding: "1.5rem",
                                 background: theme.cardBackground,
                                 borderRadius: "12px",
                                 display: "flex",
@@ -150,20 +162,38 @@ export default function SavedTablesPage({ previewMode = false }) {
                                 onClick={() => handleOpenTable(table.id)}
                             >
                                 <strong style={{ 
-                                    fontSize: "1.1rem",
+                                    fontSize: "1.2rem",
                                     color: theme.text,
-                                    transition: "color 0.3s ease"
+                                    transition: "color 0.3s ease",
+                                    display: "block",
+                                    marginBottom: "0.5rem"
                                 }}>
                                     {table.tableName}
                                 </strong>
-                                <br />
-                                <em style={{ 
-                                    opacity: 0.7,
-                                    color: theme.textSecondary,
-                                    transition: "color 0.3s ease"
+                                <div style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "1rem"
                                 }}>
-                                    {table.date}
-                                </em>
+                                    <span style={{ 
+                                        color: theme.accent,
+                                        fontSize: "0.9rem",
+                                        fontWeight: "600",
+                                        transition: "color 0.3s ease"
+                                    }}>
+                                        📅 {formatDate(table.date)}
+                                    </span>
+                                    {table.lastOpened && (
+                                        <span style={{ 
+                                            opacity: 0.7,
+                                            color: theme.textSecondary,
+                                            fontSize: "0.8rem",
+                                            transition: "color 0.3s ease"
+                                        }}>
+                                            Last opened: {formatDate(table.lastOpened)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             {!previewMode && (
                                 <button
