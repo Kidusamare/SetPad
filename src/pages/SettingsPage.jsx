@@ -1,10 +1,29 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { theme, themeName, toggleTheme } = useTheme();
+  const [currentTime, setCurrentTime] = useState("");
+
+  // Update time every second
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      setCurrentTime(timeString);
+    };
+
+    updateTime(); // Set initial time
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div style={{ 
@@ -110,32 +129,18 @@ export default function SettingsPage() {
                 flexDirection: "column",
                 transition: "background-color 0.3s ease"
               }}>
-                {/* Phone Menu */}
+                {/* Current Time Display */}
                 <div style={{
-                  fontSize: "80%",
-                  opacity: 0.4,
-                  padding: "0.8rem 1.8rem",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  color: themeName === "dark" ? "#fff" : "#000",
+                  padding: "1rem 0",
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
+                  justifyContent: "center",
+                  alignItems: "center",
+                  textAlign: "center"
                 }}>
-                  <div style={{ color: themeName === "dark" ? "#fff" : "#000" }}>4:20</div>
-                  <div style={{ display: "flex", marginTop: "0.5rem" }}>
-                    <div style={{
-                      width: 0,
-                      height: 0,
-                      borderStyle: "solid",
-                      borderWidth: "0 6.8px 7.2px 6.8px",
-                      borderColor: themeName === "dark" ? "transparent transparent white transparent" : "transparent transparent black transparent",
-                      transform: "rotate(135deg)",
-                      margin: "0.12rem 0.5rem"
-                    }} />
-                    <div style={{
-                      width: "0.85rem",
-                      height: "0.45rem",
-                      backgroundColor: themeName === "dark" ? "#fff" : "#000"
-                    }} />
-                  </div>
+                  {currentTime}
                 </div>
 
                 {/* Content */}
