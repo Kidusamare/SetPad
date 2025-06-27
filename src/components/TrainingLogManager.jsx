@@ -1,34 +1,104 @@
-const BASE_URL = "http://localhost:8000/api/tables";
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  deleteDoc, 
+  collection,
+  query,
+  orderBy 
+} from "firebase/firestore";
+import { db, auth } from "../utils/auth";
 
 export default class TrainingLogManager {
+  constructor() {
+    this.user = auth.currentUser;
+  }
+
+  // Get the current user's UID
+  getUserId() {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    return user.uid;
+  }
+
+  // Get Firestore document reference for a specific table
+  getTableDoc(logId) {
+    const userId = this.getUserId();
+    return doc(db, "users", userId, "tables", logId);
+  }
+
+  // Get Firestore collection reference for user's tables
+  getTablesCollection() {
+    const userId = this.getUserId();
+    return collection(db, "users", userId, "tables");
+  }
+
   async loadTable(id) {
-    const res = await fetch(`${BASE_URL}/${encodeURIComponent(id)}`);
-    if (!res.ok) return null;
-    return await res.json();
+    try {
+      const docRef = this.getTableDoc(id);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return docSnap.data();
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error("Error loading table:", error);
+      return null;
+    }
   }
 
   async saveTable(log) {
-    const res = await fetch(BASE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(log),
-    });
-    if (!res.ok) throw new Error("Save failed");
-    return await res.json();
+    try {
+      const docRef = this.getTableDoc(log.id);
+      await setDoc(docRef, {
+        ...log,
+        lastOpened: new Date().toISOString()
+      });
+      return { message: "Saved" };
+    } catch (error) {
+      console.error("Error saving table:", error);
+      throw new Error("Save failed");
+    }
   }
 
   async deleteTable(id) {
-    const res = await fetch(`${BASE_URL}/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Delete failed");
-    return true;
+    try {
+      const docRef = this.getTableDoc(id);
+      await deleteDoc(docRef);
+      return true;
+    } catch (error) {
+      console.error("Error deleting table:", error);
+      throw new Error("Delete failed");
+    }
   }
 
   async listTables() {
-    const res = await fetch(BASE_URL);
-    if (!res.ok) return [];
-    return await res.json();
+    try {
+      const collectionRef = this.getTablesCollection();
+      const q = query(collectionRef, orderBy("lastOpened", "desc"));
+      const querySnapshot = await getDocs(q);
+      
+      const tables = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        tables.push({
+          id: data.id,
+          tableName: data.tableName,
+          date: data.date,
+          lastOpened: data.lastOpened
+        });
+      });
+      
+      return tables;
+    } catch (error) {
+      console.error("Error listing tables:", error);
+      return [];
+    }
   }
 
   createNewTable() {

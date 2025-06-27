@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "../utils/auth";
 import SavedTablesPage from "../components/SavedTablesPage";
 
 export default function Dashboard() {
@@ -9,8 +11,41 @@ export default function Dashboard() {
     navigate("/log");
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <div style={{ background: "#000", minHeight: "100vh", color: "#f5f6fa", padding: "2rem" }}>
+      {/* Logout button */}
+      <button
+        onClick={handleLogout}
+        style={{
+          position: "absolute",
+          top: "2rem",
+          right: "2rem",
+          background: "#ff4d4f",
+          color: "#fff",
+          padding: "0.7rem 1.4rem",
+          border: "none",
+          borderRadius: "10px",
+          fontWeight: "600",
+          fontSize: "1rem",
+          cursor: "pointer",
+          zIndex: 10,
+          transition: "background 0.2s"
+        }}
+        onMouseOver={e => e.currentTarget.style.background = "#ff7875"}
+        onMouseOut={e => e.currentTarget.style.background = "#ff4d4f"}
+      >
+        Logout
+      </button>
+
       <div
         onClick={handleOpenSaved}
         style={{
