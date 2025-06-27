@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react"
+import { useTheme } from "../context/ThemeContext";
 
 export default function TrainingLogRow({ rowData, onUpdate }) {
+    const { theme } = useTheme();
     const [muscleGroup, setMuscleGroup] = useState(rowData.muscleGroup);
     const [exercise, setExercise] = useState(rowData.exercise);
-    const [sets, setSets] = useState(rowData.sets); // <-- FIXED: do not wrap in []
+    const [sets, setSets] = useState(rowData.sets);
     const [notes, setNotes] = useState(rowData.notes);
     const [showNotes, setShowNotes] = useState(rowData.showNotes);
     const [weightUnit, setWeightUnit] = useState(rowData.weightUnit);
@@ -70,79 +72,101 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
         setWeightUnit(rowData.weightUnit);
     }, [rowData]);
 
-    // Dark mode & Apple Notes-like style variables
-    const darkBg = "#23272f";
-    const darkCard = "#282c34";
-    const borderColor = "#444950";
-    const labelColor = "#bfc7d5";
-    const inputBg = "#23272f";
-    const inputText = "#f5f6fa";
-    const accent = "#ffd966";
-    const buttonBg = "#31363f";
-    const buttonText = "#ffd966";
-    const buttonHover = "#444950";
-
     return (
         <div
             style={{
                 marginBottom: "2rem",
-                padding: "1.5rem",
-                background: darkCard,
-                border: `1px solid ${borderColor}`,
+                padding: "2rem",
+                background: theme.cardBackground,
+                border: `1px solid ${theme.cardBorder}`,
                 borderRadius: "16px",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+                boxShadow: theme.shadowLight,
                 fontFamily: "'Segoe UI', 'San Francisco', 'Arial', sans-serif",
-                color: inputText,
-                transition: "background 0.3s, color 0.3s"
+                color: theme.text,
+                transition: "background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s"
             }}
         >
             {/* Muscle Group */}
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ fontWeight: "600", color: labelColor }}>Muscle Group:</label><br />
+            <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ 
+                    fontWeight: "600", 
+                    color: theme.textSecondary,
+                    fontSize: "1rem",
+                    marginBottom: "0.5rem",
+                    display: "block",
+                    transition: "color 0.3s ease"
+                }}>
+                    Muscle Group:
+                </label>
                 <input
                     type="text"
                     value={muscleGroup}
                     onChange={(e) => setMuscleGroup(e.target.value)}
-                    placeholder="Enter Exersice Focus Here"
+                    placeholder="Enter Exercise Focus Here"
                     style={{
-                        padding: "0.5rem",
+                        padding: "0.8rem",
                         width: "100%",
                         borderRadius: "8px",
-                        border: `1px solid ${borderColor}`,
-                        background: inputBg,
-                        color: inputText,
+                        border: `1px solid ${theme.inputBorder}`,
+                        background: theme.inputBackground,
+                        color: theme.text,
                         fontSize: "1rem",
-                        marginTop: "0.2rem"
+                        boxSizing: "border-box",
+                        transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
                     }}
                 />
             </div>
 
             {/* Exercise Name */}
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ fontWeight: "600", color: labelColor }}>Exercise:</label><br />
+            <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ 
+                    fontWeight: "600", 
+                    color: theme.textSecondary,
+                    fontSize: "1rem",
+                    marginBottom: "0.5rem",
+                    display: "block",
+                    transition: "color 0.3s ease"
+                }}>
+                    Exercise:
+                </label>
                 <input
                     type="text"
                     value={exercise}
                     onChange={(e) => setExercise(e.target.value)}
-                    placeholder="Name of exersice"
+                    placeholder="Name of exercise"
                     style={{
-                        padding: "0.5rem",
+                        padding: "0.8rem",
                         width: "100%",
                         borderRadius: "8px",
-                        border: `1px solid ${borderColor}`,
-                        background: inputBg,
-                        color: inputText,
+                        border: `1px solid ${theme.inputBorder}`,
+                        background: theme.inputBackground,
+                        color: theme.text,
                         fontSize: "1rem",
-                        marginTop: "0.2rem"
+                        boxSizing: "border-box",
+                        transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
                     }}
                 />
             </div>
 
             {/* Sets */}
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ fontWeight: "600", color: labelColor }}>Sets:</label>
+            <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ 
+                    fontWeight: "600", 
+                    color: theme.textSecondary,
+                    fontSize: "1rem",
+                    marginBottom: "1rem",
+                    display: "block",
+                    transition: "color 0.3s ease"
+                }}>
+                    Sets:
+                </label>
                 {sets.map((set, index) => (
-                    <div key={index} style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <div key={index} style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        marginBottom: "0.8rem",
+                        gap: "0.5rem"
+                    }}>
                         <input
                             type="number"
                             min="0"
@@ -153,13 +177,14 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                                 if (/^\d*$/.test(val)) handleSetChange(index, "reps", val);
                             }}
                             style={{
-                                padding: "0.5rem",
+                                padding: "0.6rem",
                                 width: "80px",
-                                marginRight: "0.5rem",
                                 borderRadius: "8px",
-                                border: `1px solid ${borderColor}`,
-                                background: inputBg,
-                                color: inputText
+                                border: `1px solid ${theme.inputBorder}`,
+                                background: theme.inputBackground,
+                                color: theme.text,
+                                fontSize: "0.9rem",
+                                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
                             }}
                         />
                         <input
@@ -169,112 +194,135 @@ export default function TrainingLogRow({ rowData, onUpdate }) {
                             onChange={(e) => handleSetChange(index, "weight", e.target.value)}
                             onKeyDown={(e) => handleWeightKeyDown(e, index)}
                             style={{
-                                padding: "0.5rem",
+                                padding: "0.6rem",
                                 width: "100px",
-                                marginRight: "0.5rem",
                                 borderRadius: "8px",
-                                border: `1px solid ${borderColor}`,
-                                background: inputBg,
-                                color: inputText
+                                border: `1px solid ${theme.inputBorder}`,
+                                background: theme.inputBackground,
+                                color: theme.text,
+                                fontSize: "0.9rem",
+                                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
                             }}
                         />
-                        <span style={{ marginRight: "0.5rem", fontWeight: "500", color: accent }}>{weightUnit}</span>
+                        <span style={{ 
+                            fontWeight: "500", 
+                            color: theme.accent,
+                            fontSize: "0.9rem",
+                            minWidth: "30px",
+                            transition: "color 0.3s ease"
+                        }}>
+                            {weightUnit}
+                        </span>
                         {sets.length > 1 && (
                             <button
                                 type="button"
                                 onClick={() => removeSet(index)}
                                 style={{
-                                    background: buttonBg,
-                                    color: buttonText,
-                                    border: "none",
+                                    background: theme.surfaceSecondary,
+                                    color: theme.textSecondary,
+                                    border: `1px solid ${theme.border}`,
                                     borderRadius: "6px",
-                                    padding: "0.3rem 0.8rem",
+                                    padding: "0.5rem 0.8rem",
                                     cursor: "pointer",
-                                    marginLeft: "0.2rem",
-                                    transition: "background 0.2s"
+                                    fontSize: "0.8rem",
+                                    fontWeight: "600",
+                                    transition: "background 0.2s ease, border-color 0.2s ease"
                                 }}
-                                onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                                onMouseOut={e => e.currentTarget.style.background = buttonBg}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = theme.surfaceTertiary;
+                                    e.currentTarget.style.borderColor = theme.textMuted;
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = theme.surfaceSecondary;
+                                    e.currentTarget.style.borderColor = theme.border;
+                                }}
                             >
                                 Remove
                             </button>
                         )}
                     </div>
                 ))}
-                <button
-                    type="button"
-                    onClick={addSet}
-                    style={{
-                        marginRight: "0.5rem",
-                        background: buttonBg,
-                        color: buttonText,
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "0.4rem 0.9rem",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        transition: "background 0.2s"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                    onMouseOut={e => e.currentTarget.style.background = buttonBg}
-                >
-                    Add Set
-                </button>
-                <button
-                    type="button"
-                    onClick={toggleWeightUnit}
-                    style={{
-                        background: buttonBg,
-                        color: buttonText,
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "0.4rem 0.9rem",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        transition: "background 0.2s"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                    onMouseOut={e => e.currentTarget.style.background = buttonBg}
-                >
-                    Unit: {weightUnit.toUpperCase()}
-                </button>
+                <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
+                    <button
+                        type="button"
+                        onClick={addSet}
+                        style={{
+                            background: theme.accentSecondary,
+                            color: theme.accent,
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "0.6rem 1rem",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            transition: "background 0.2s ease"
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
+                    >
+                        Add Set
+                    </button>
+                    <button
+                        type="button"
+                        onClick={toggleWeightUnit}
+                        style={{
+                            background: theme.accentSecondary,
+                            color: theme.accent,
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "0.6rem 1rem",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            transition: "background 0.2s ease"
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
+                    >
+                        Unit: {weightUnit.toUpperCase()}
+                    </button>
+                </div>
             </div>
 
             {/* Notes */}
-            <div style={{ marginTop: "1rem" }}>
+            <div style={{ marginTop: "1.5rem" }}>
                 <button
                     onClick={() => setShowNotes(!showNotes)}
                     style={{
-                        background: buttonBg,
-                        color: buttonText,
+                        background: theme.accentSecondary,
+                        color: theme.accent,
                         border: "none",
-                        borderRadius: "6px",
-                        padding: "0.5rem 1.2rem",
+                        borderRadius: "8px",
+                        padding: "0.6rem 1.2rem",
                         cursor: "pointer",
                         fontWeight: 600,
-                        transition: "background 0.2s"
+                        fontSize: "0.9rem",
+                        transition: "background 0.2s ease"
                     }}
-                    onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                    onMouseOut={e => e.currentTarget.style.background = buttonBg}
+                    onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                    onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
                 >
                     {showNotes ? "Hide Notes" : "Add Notes"}
                 </button>
                 {showNotes && (
-                    <div>
+                    <div style={{ marginTop: "1rem" }}>
                         <textarea
-                            rows="3"
+                            rows="4"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder="No notes"
+                            placeholder="Add your notes here..."
                             style={{
                                 width: "100%",
-                                marginTop: "0.5rem",
                                 borderRadius: "8px",
-                                padding: "0.5rem",
-                                border: `1px solid ${borderColor}`,
-                                background: inputBg,
-                                color: inputText,
-                                fontSize: "1rem"
+                                padding: "0.8rem",
+                                border: `1px solid ${theme.inputBorder}`,
+                                background: theme.inputBackground,
+                                color: theme.text,
+                                fontSize: "1rem",
+                                resize: "vertical",
+                                minHeight: "100px",
+                                boxSizing: "border-box",
+                                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
                             }}
                         />
                     </div>

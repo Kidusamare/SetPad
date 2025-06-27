@@ -2,10 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/auth";
+import { useTheme } from "../context/ThemeContext";
 import SavedTablesPage from "../components/SavedTablesPage";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const handleOpenSaved = () => {
     navigate("/log");
@@ -20,28 +22,72 @@ export default function Dashboard() {
     }
   };
 
+  const handleSettings = () => {
+    navigate("/settings");
+  };
+
   return (
-    <div style={{ background: "#000", minHeight: "100vh", color: "#f5f6fa", padding: "2rem" }}>
-      {/* Logout button */}
+    <div style={{ 
+      background: theme.background, 
+      minHeight: "100vh", 
+      color: theme.text, 
+      padding: "2rem",
+      paddingTop: "5rem",
+      position: "relative",
+      transition: "background-color 0.3s ease, color 0.3s ease"
+    }}>
+      {/* Settings button */}
       <button
-        onClick={handleLogout}
+        onClick={handleSettings}
         style={{
-          position: "absolute",
-          top: "2rem",
-          right: "2rem",
-          background: "#ff4d4f",
-          color: "#fff",
+          position: "fixed",
+          top: "1rem",
+          right: "8rem",
+          background: theme.accentSecondary,
+          color: theme.accent,
           padding: "0.7rem 1.4rem",
           border: "none",
           borderRadius: "10px",
           fontWeight: "600",
           fontSize: "1rem",
           cursor: "pointer",
-          zIndex: 10,
-          transition: "background 0.2s"
+          zIndex: 1000,
+          transition: "background 0.2s ease",
+          minWidth: "120px"
         }}
-        onMouseOver={e => e.currentTarget.style.background = "#ff7875"}
-        onMouseOut={e => e.currentTarget.style.background = "#ff4d4f"}
+        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
+      >
+        ⚙️ Settings
+      </button>
+
+      {/* Logout button */}
+      <button
+        onClick={handleLogout}
+        style={{
+          position: "fixed",
+          top: "1rem",
+          right: "1rem",
+          background: theme.surfaceSecondary,
+          color: theme.textSecondary,
+          padding: "0.7rem 1.4rem",
+          border: `1px solid ${theme.border}`,
+          borderRadius: "10px",
+          fontWeight: "600",
+          fontSize: "1rem",
+          cursor: "pointer",
+          zIndex: 1000,
+          transition: "background 0.2s ease, border-color 0.2s ease",
+          minWidth: "100px"
+        }}
+        onMouseOver={e => {
+          e.currentTarget.style.background = theme.surfaceTertiary;
+          e.currentTarget.style.borderColor = theme.accent;
+        }}
+        onMouseOut={e => {
+          e.currentTarget.style.background = theme.surfaceSecondary;
+          e.currentTarget.style.borderColor = theme.border;
+        }}
       >
         Logout
       </button>
@@ -51,36 +97,57 @@ export default function Dashboard() {
         style={{
           overflow: "hidden",
           borderRadius: "1rem",
-          border: "2px solid #ffd966",
+          border: `2px solid ${theme.accent}`,
           position: "relative",
           cursor: "pointer",
-          transition: "transform 0.3s ease",
+          transition: "transform 0.3s ease, border-color 0.3s ease",
           marginBottom: "2rem"
         }}
         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
       >
-        <div style={{ pointerEvents: "none", opacity: 0.8, maxHeight: "400px", overflow: "hidden" }}>
+        <div style={{ 
+          pointerEvents: "none", 
+          opacity: 0.8, 
+          maxHeight: "400px", 
+          overflow: "hidden" 
+        }}>
           <SavedTablesPage previewMode={true} />
         </div>
         <div
           style={{
             position: "absolute",
-            top: 8,
-            left: 12,
-            background: "#000",
-            color: "#ffd966",
+            top: "1rem",
+            left: "1rem",
+            background: theme.background,
+            color: theme.accent,
             fontWeight: "bold",
-            padding: "0.3rem 0.8rem",
-            borderRadius: "6px"
+            padding: "0.5rem 1rem",
+            borderRadius: "8px",
+            fontSize: "0.9rem",
+            transition: "background-color 0.3s ease, color 0.3s ease"
           }}
         >
-          Open Saved Tables →
+          Open Saved Logs →
         </div>
       </div>
 
-      <h1 style={{ fontSize: "2rem" }}>Welcome to your Dashboard</h1>
-      <p style={{ marginTop: "1rem", opacity: 0.7 }}>
+      <h1 style={{ 
+        fontSize: "2.5rem", 
+        marginBottom: "1rem",
+        color: theme.accent,
+        transition: "color 0.3s ease"
+      }}>
+        Welcome to your Dashboard
+      </h1>
+      <p style={{ 
+        marginTop: "1rem", 
+        opacity: 0.7,
+        fontSize: "1.1rem",
+        lineHeight: "1.6",
+        color: theme.textSecondary,
+        transition: "color 0.3s ease"
+      }}>
         This space will soon show your analytics, recent logs, and suggested training insights.
       </p>
     </div>
