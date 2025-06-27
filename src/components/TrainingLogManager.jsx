@@ -106,7 +106,7 @@ export default class TrainingLogManager {
     const today = new Date().toISOString().split("T")[0];
     return {
       id,
-      tableName: `New Table - ${today}`,
+      tableName: "New Log",
       date: today,
       rows: [
         {

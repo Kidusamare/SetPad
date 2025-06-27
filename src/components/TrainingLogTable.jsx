@@ -1,33 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import TrainingLogRow from "./TrainingLogRow";
+import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
+import TrainingLogRow from "./TrainingLogRow";
 
 const manager = new TrainingLogManager();
-
-const buttonStyle = {
-    background: "#31363f",
-    color: "#ffd966",
-    padding: "0.5rem 1.2rem",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: 600,
-    fontSize: "1rem",
-    marginRight: "0.7rem",
-    marginTop: "1rem",
-    transition: "background 0.2s"
-};
-const buttonHover = "#444950";
-const disabledButtonStyle = {
-    ...buttonStyle,
-    opacity: 0.5,
-    cursor: "not-allowed"
-};
 
 export default function TrainingLogTable() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { theme } = useTheme();
     const [log, setLog] = useState(null);
 
     useEffect(() => {
@@ -51,7 +33,7 @@ export default function TrainingLogTable() {
                 };
                 const defaultLog = {
                     id: id,
-                    tableName: `New Table - ${today}`,
+                    tableName: `New Log - ${today}`,
                     date: today,
                     rows: [defaultRow]
                 };
@@ -100,52 +82,90 @@ export default function TrainingLogTable() {
         return () => clearTimeout(timeout);
     }, [log]);
 
-    if (!log) return <div style={{ background: "#000", minHeight: "100vh" }}></div>;
+    if (!log) return <div style={{ background: theme.background, minHeight: "100vh" }}></div>;
 
     return (
-        <div style={{ padding: "2rem", color: "#f5f6fa", background: "#000", minHeight: "100vh" }}>
+        <div style={{ 
+            padding: "2rem",
+            paddingTop: "5rem", // Add top padding to prevent overlap with back button
+            color: theme.text, 
+            background: theme.background, 
+            minHeight: "100vh",
+            position: "relative",
+            transition: "background-color 0.3s ease, color 0.3s ease"
+        }}>
             <button
                 onClick={() => navigate("/log")}
-                style={buttonStyle}
-                onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                onMouseOut={e => e.currentTarget.style.background = buttonStyle.background}
+                style={{
+                    position: "fixed",
+                    top: "1rem",
+                    left: "1rem",
+                    background: theme.accentSecondary,
+                    color: theme.accent,
+                    padding: "0.7rem 1.4rem",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    cursor: "pointer",
+                    zIndex: 1000,
+                    transition: "background 0.2s ease"
+                }}
+                onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
             >
-                ← Back to Saved Tables
+                ← Back to Saved Logs
             </button>
 
-            <input
-                type="text"
-                value={log.tableName}
-                onChange={handleRename}
-                style={{
-                    fontSize: "1.5rem",
-                    fontWeight: "bold",
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: "1px solid #666",
-                    color: "#ffd966",
-                    marginBottom: "1rem",
-                    width: "100%"
-                }}
-            />
+            <div style={{ marginBottom: "2rem" }}>
+                <input
+                    type="text"
+                    value={log.tableName}
+                    onChange={handleRename}
+                    style={{
+                        fontSize: "2rem",
+                        fontWeight: "bold",
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: `2px solid ${theme.accent}`,
+                        color: theme.accent,
+                        marginBottom: "1rem",
+                        width: "100%",
+                        padding: "0.5rem 0",
+                        transition: "border-color 0.3s ease, color 0.3s ease"
+                    }}
+                />
 
-            <input
-                type="date"
-                value={log.date}
-                onChange={(e) => setLog({ ...log, date: e.target.value })}
-                style={{
-                    ...buttonStyle,
-                    width: "auto",
-                    color: "#f5f6fa",
-                    background: "#181a1b",
-                    marginRight: 0,
-                    marginTop: 0,
-                    marginBottom: "1rem"
-                }}
-                onMouseOver={e => e.currentTarget.style.background = "#23272f"}
-                onMouseOut={e => e.currentTarget.style.background = "#181a1b"}
-            />
-            <hr />
+                <input
+                    type="date"
+                    value={log.date}
+                    onChange={(e) => setLog({ ...log, date: e.target.value })}
+                    style={{
+                        background: theme.surfaceSecondary,
+                        color: theme.text,
+                        padding: "0.7rem 1.4rem",
+                        border: "none",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        fontSize: "1rem",
+                        cursor: "pointer",
+                        marginRight: 0,
+                        marginTop: 0,
+                        marginBottom: "1rem",
+                        transition: "background 0.2s ease"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = theme.surfaceTertiary}
+                    onMouseOut={e => e.currentTarget.style.background = theme.surfaceSecondary}
+                />
+            </div>
+
+            <hr style={{ 
+                border: "none", 
+                height: "1px", 
+                background: theme.border, 
+                margin: "2rem 0",
+                transition: "background-color 0.3s ease"
+            }} />
 
             {log.rows.map((row, index) => (
                 <TrainingLogRow
@@ -155,24 +175,69 @@ export default function TrainingLogTable() {
                 />
             ))}
 
-            <div style={{ marginTop: "1.5rem" }}>
+            <div style={{ 
+                marginTop: "2rem",
+                padding: "1.5rem",
+                background: theme.cardBackground,
+                borderRadius: "12px",
+                border: `1px solid ${theme.cardBorder}`,
+                transition: "background-color 0.3s ease, border-color 0.3s ease"
+            }}>
+                <h3 style={{ 
+                    marginBottom: "1rem", 
+                    color: theme.accent,
+                    fontSize: "1.2rem",
+                    transition: "color 0.3s ease"
+                }}>
+                    Exercise Management
+                </h3>
                 <button
                     onClick={addRow}
-                    style={buttonStyle}
-                    onMouseOver={e => e.currentTarget.style.background = buttonHover}
-                    onMouseOut={e => e.currentTarget.style.background = buttonStyle.background}
+                    style={{
+                        background: theme.accentSecondary,
+                        color: theme.accent,
+                        padding: "0.7rem 1.4rem",
+                        border: "none",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        marginRight: "1rem",
+                        marginTop: "1rem",
+                        transition: "background 0.2s ease"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                    onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
                 >
                     + Add Exercise
                 </button>
                 <button
                     onClick={deleteLastRow}
                     disabled={log.rows.length <= 1}
-                    style={log.rows.length <= 1 ? disabledButtonStyle : buttonStyle}
+                    style={{
+                        background: log.rows.length <= 1 ? theme.textMuted : theme.surfaceSecondary,
+                        color: log.rows.length <= 1 ? theme.textSecondary : theme.textSecondary,
+                        padding: "0.7rem 1.4rem",
+                        border: `1px solid ${theme.border}`,
+                        borderRadius: "10px",
+                        cursor: log.rows.length <= 1 ? "not-allowed" : "pointer",
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        marginRight: "1rem",
+                        marginTop: "1rem",
+                        transition: "background 0.2s ease, border-color 0.2s ease"
+                    }}
                     onMouseOver={e => {
-                        if (log.rows.length > 1) e.currentTarget.style.background = buttonHover;
+                        if (log.rows.length > 1) {
+                            e.currentTarget.style.background = theme.surfaceTertiary;
+                            e.currentTarget.style.borderColor = theme.textMuted;
+                        }
                     }}
                     onMouseOut={e => {
-                        if (log.rows.length > 1) e.currentTarget.style.background = buttonStyle.background;
+                        if (log.rows.length > 1) {
+                            e.currentTarget.style.background = theme.surfaceSecondary;
+                            e.currentTarget.style.borderColor = theme.border;
+                        }
                     }}
                 >
                     - Delete Last
