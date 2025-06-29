@@ -12,6 +12,7 @@ export default function SavedTablesPage({ previewMode = false }) {
     const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
     const [showBackButton, setShowBackButton] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const [deletePopup, setDeletePopup] = useState({ show: false, tableId: null, tableName: "" });
 
     useEffect(() => {
         const fetchTables = async () => {
@@ -48,11 +49,20 @@ export default function SavedTablesPage({ previewMode = false }) {
         navigate(`/log/${id}`);
     };
 
-    const handleDeleteTable = async (id) => {
-        if (window.confirm("Are you sure you want to delete this log?")) {
-            await manager.deleteTable(id);
-            setTables((prev) => prev.filter((table) => table.id !== id));
+    const handleDeleteTable = async (id, tableName) => {
+        setDeletePopup({ show: true, tableId: id, tableName: tableName });
+    };
+
+    const confirmDelete = async () => {
+        if (deletePopup.tableId) {
+            await manager.deleteTable(deletePopup.tableId);
+            setTables((prev) => prev.filter((table) => table.id !== deletePopup.tableId));
+            setDeletePopup({ show: false, tableId: null, tableName: "" });
         }
+    };
+
+    const cancelDelete = () => {
+        setDeletePopup({ show: false, tableId: null, tableName: "" });
     };
 
     // Format date for display
@@ -261,7 +271,7 @@ export default function SavedTablesPage({ previewMode = false }) {
                             </div>
                             {!previewMode && (
                                 <button
-                                    onClick={() => handleDeleteTable(table.id)}
+                                    onClick={() => handleDeleteTable(table.id, table.tableName)}
                                     style={{
                                         background: theme.surfaceSecondary,
                                         color: theme.textSecondary,
@@ -287,6 +297,149 @@ export default function SavedTablesPage({ previewMode = false }) {
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {/* Delete Confirmation Popup */}
+            {deletePopup.show && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(0, 0, 0, 0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 2000,
+                    padding: "1rem"
+                }}
+                onClick={cancelDelete}
+                >
+                    <div style={{
+                        background: theme.cardBackground,
+                        borderRadius: "16px",
+                        padding: "2rem",
+                        maxWidth: "90vw",
+                        width: "400px",
+                        border: `1px solid ${theme.cardBorder}`,
+                        boxShadow: theme.shadow,
+                        animation: "popupSlideIn 0.3s ease-out"
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "1.5rem",
+                            gap: "1rem"
+                        }}>
+                            <div style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "50%",
+                                background: "rgba(239, 68, 68, 0.1)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                border: "2px solid rgba(239, 68, 68, 0.3)"
+                            }}>
+                                <span style={{ fontSize: "1.5rem", color: "#ef4444" }}>⚠️</span>
+                            </div>
+                            <div>
+                                <h3 style={{
+                                    margin: 0,
+                                    color: theme.text,
+                                    fontSize: "1.3rem",
+                                    fontWeight: "600"
+                                }}>
+                                    Delete Log
+                                </h3>
+                                <p style={{
+                                    margin: "0.5rem 0 0 0",
+                                    color: theme.textSecondary,
+                                    fontSize: "0.9rem"
+                                }}>
+                                    This action cannot be undone
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            background: theme.surfaceSecondary,
+                            padding: "1rem",
+                            borderRadius: "8px",
+                            marginBottom: "1.5rem",
+                            border: `1px solid ${theme.borderLight}`
+                        }}>
+                            <p style={{
+                                margin: 0,
+                                color: theme.text,
+                                fontSize: "1rem",
+                                lineHeight: "1.5"
+                            }}>
+                                Are you sure you want to delete <strong>"{deletePopup.tableName}"</strong>?
+                            </p>
+                            <p style={{
+                                margin: "0.5rem 0 0 0",
+                                color: theme.textSecondary,
+                                fontSize: "0.9rem",
+                                lineHeight: "1.4"
+                            }}>
+                                All workout data in this log will be permanently removed.
+                            </p>
+                        </div>
+
+                        <div style={{
+                            display: "flex",
+                            gap: "1rem",
+                            justifyContent: "flex-end"
+                        }}>
+                            <button
+                                onClick={cancelDelete}
+                                style={{
+                                    background: theme.surfaceSecondary,
+                                    color: theme.textSecondary,
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "8px",
+                                    padding: "0.8rem 1.5rem",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    fontSize: "1rem",
+                                    transition: "background 0.2s ease, border-color 0.2s ease"
+                                }}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = theme.surfaceTertiary;
+                                    e.currentTarget.style.borderColor = theme.textMuted;
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = theme.surfaceSecondary;
+                                    e.currentTarget.style.borderColor = theme.border;
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "8px",
+                                    padding: "0.8rem 1.5rem",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    fontSize: "1rem",
+                                    transition: "background 0.2s ease"
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = "#dc2626"}
+                                onMouseOut={e => e.currentTarget.style.background = "#ef4444"}
+                            >
+                                Delete Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
