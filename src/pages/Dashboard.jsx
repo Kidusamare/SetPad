@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/auth";
@@ -13,6 +13,25 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
+  const [showTopButtons, setShowTopButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Scroll detection for top buttons
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show buttons if at top of page or scrolling up
+      const isAtTop = currentScrollY < 50;
+      const isScrollingUp = currentScrollY < lastScrollY;
+      
+      setShowTopButtons(isAtTop || isScrollingUp);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const handleOpenSaved = () => {
     navigate("/log");
@@ -63,14 +82,17 @@ export default function Dashboard() {
           fontSize: "1rem",
           cursor: "pointer",
           zIndex: 1000,
-          transition: "background 0.2s ease",
+          transition: "all 0.3s ease",
           width: "50px",
           height: "50px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "4px"
+          gap: "4px",
+          opacity: showTopButtons ? 1 : 0,
+          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
+          pointerEvents: showTopButtons ? "auto" : "none"
         }}
         onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
         onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
@@ -114,8 +136,11 @@ export default function Dashboard() {
           fontSize: "1rem",
           cursor: "pointer",
           zIndex: 1000,
-          transition: "background 0.2s ease, border-color 0.2s ease",
-          minWidth: "100px"
+          transition: "all 0.3s ease",
+          minWidth: "100px",
+          opacity: showTopButtons ? 1 : 0,
+          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
+          pointerEvents: showTopButtons ? "auto" : "none"
         }}
         onMouseOver={e => {
           e.currentTarget.style.background = theme.surfaceTertiary;
