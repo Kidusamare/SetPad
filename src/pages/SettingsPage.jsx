@@ -28,6 +28,8 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const [showBackButton, setShowBackButton] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Update time every second
   useEffect(() => {
@@ -54,6 +56,23 @@ export default function SettingsPage() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Scroll detection for back button
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show button if at top of page or scrolling up
+      const isAtTop = currentScrollY < 50;
+      const isScrollingUp = currentScrollY < lastScrollY;
+      
+      setShowBackButton(isAtTop || isScrollingUp);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -126,7 +145,10 @@ export default function SettingsPage() {
           fontSize: "1rem",
           cursor: "pointer",
           zIndex: 1000,
-          transition: "background 0.2s ease"
+          transition: "all 0.3s ease",
+          opacity: showBackButton ? 1 : 0,
+          transform: showBackButton ? "translateY(0)" : "translateY(-10px)",
+          pointerEvents: showBackButton ? "auto" : "none"
         }}
         onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
         onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}

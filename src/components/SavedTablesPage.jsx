@@ -10,6 +10,8 @@ export default function SavedTablesPage({ previewMode = false }) {
     const { theme } = useTheme();
     const [tables, setTables] = useState([]);
     const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
+    const [showBackButton, setShowBackButton] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
 
     useEffect(() => {
         const fetchTables = async () => {
@@ -18,6 +20,23 @@ export default function SavedTablesPage({ previewMode = false }) {
         };
         fetchTables();
     }, []);
+
+    // Scroll detection for back button
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Show button if at top of page or scrolling up
+            const isAtTop = currentScrollY < 50;
+            const isScrollingUp = currentScrollY < lastScrollY;
+            
+            setShowBackButton(isAtTop || isScrollingUp);
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
 
     const handleNewTable = async () => {
         const newTable = manager.createNewTable();
@@ -77,7 +96,10 @@ export default function SavedTablesPage({ previewMode = false }) {
                         fontSize: "1rem",
                         cursor: "pointer",
                         zIndex: 1000,
-                        transition: "background 0.2s ease"
+                        transition: "all 0.3s ease",
+                        opacity: showBackButton ? 1 : 0,
+                        transform: showBackButton ? "translateY(0)" : "translateY(-10px)",
+                        pointerEvents: showBackButton ? "auto" : "none"
                     }}
                     onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                     onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
