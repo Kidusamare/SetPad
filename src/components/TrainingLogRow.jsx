@@ -488,26 +488,6 @@ export default function TrainingLogRow({
                     }}>
                         <input
                             type="number"
-                            min="0"
-                            placeholder="Reps"
-                            value={set.reps}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (/^\d*$/.test(val)) handleSetChange(index, "reps", val);
-                            }}
-                            style={{
-                                padding: "0.6rem",
-                                width: "80px",
-                                borderRadius: "8px",
-                                border: `1px solid ${theme.inputBorder}`,
-                                background: theme.inputBackground,
-                                color: theme.text,
-                                fontSize: "0.9rem",
-                                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
-                            }}
-                        />
-                        <input
-                            type="number"
                             placeholder="Weight"
                             value={set.weight}
                             onChange={(e) => handleSetChange(index, "weight", e.target.value)}
@@ -532,6 +512,35 @@ export default function TrainingLogRow({
                         }}>
                             {weightUnit}
                         </span>
+                        <input
+                            type="number"
+                            min="0"
+                            placeholder="Reps"
+                            value={set.reps}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^\d*$/.test(val)) handleSetChange(index, "reps", val);
+                            }}
+                            style={{
+                                padding: "0.6rem",
+                                width: "80px",
+                                borderRadius: "8px",
+                                border: `1px solid ${theme.inputBorder}`,
+                                background: theme.inputBackground,
+                                color: theme.text,
+                                fontSize: "0.9rem",
+                                transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease"
+                            }}
+                        />
+                        <span style={{ 
+                            fontWeight: "500", 
+                            color: theme.textSecondary,
+                            fontSize: "0.9rem",
+                            minWidth: "30px",
+                            transition: "color 0.3s ease"
+                        }}>
+                            reps
+                        </span>
                         {sets.length > 1 && (
                             <button
                                 type="button"
@@ -540,23 +549,31 @@ export default function TrainingLogRow({
                                     background: theme.surfaceSecondary,
                                     color: theme.textSecondary,
                                     border: `1px solid ${theme.border}`,
-                                    borderRadius: "6px",
-                                    padding: "0.5rem 0.8rem",
+                                    borderRadius: "50%",
+                                    width: "28px",
+                                    height: "28px",
                                     cursor: "pointer",
-                                    fontSize: "0.8rem",
+                                    fontSize: "1rem",
                                     fontWeight: "600",
-                                    transition: "background 0.2s ease, border-color 0.2s ease"
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    transition: "background 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+                                    padding: 0,
+                                    minWidth: "28px"
                                 }}
                                 onMouseOver={e => {
                                     e.currentTarget.style.background = theme.surfaceTertiary;
                                     e.currentTarget.style.borderColor = theme.textMuted;
+                                    e.currentTarget.style.color = theme.text;
                                 }}
                                 onMouseOut={e => {
                                     e.currentTarget.style.background = theme.surfaceSecondary;
                                     e.currentTarget.style.borderColor = theme.border;
+                                    e.currentTarget.style.color = theme.textSecondary;
                                 }}
                             >
-                                Remove
+                                ×
                             </button>
                         )}
                     </div>
