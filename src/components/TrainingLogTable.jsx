@@ -224,6 +224,7 @@ export default function TrainingLogTable() {
                     muscleGroupSuggestions={muscleGroupSuggestions}
                     exerciseSuggestions={exerciseSuggestions}
                     onMuscleGroupChange={handleMuscleGroupChange}
+                    currentLogId={log.id}
                 />
             ))}
 
