@@ -5,6 +5,7 @@ import { auth } from "../utils/auth";
 import { useTheme } from "../context/ThemeContext";
 import SavedTablesPage from "../components/SavedTablesPage";
 import TrainingLogManager from "../components/TrainingLogManager";
+import Logo from "../components/Logo";
 
 const manager = new TrainingLogManager();
 
@@ -46,16 +47,16 @@ export default function Dashboard() {
       position: "relative",
       transition: "background-color 0.3s ease, color 0.3s ease"
     }}>
-      {/* Settings button */}
+      {/* Hamburger Menu */}
       <button
         onClick={handleSettings}
         style={{
           position: "fixed",
           top: "1rem",
-          right: "8rem",
+          left: "1rem",
           background: theme.accentSecondary,
           color: theme.accent,
-          padding: "0.7rem 1.4rem",
+          padding: "0.7rem",
           border: "none",
           borderRadius: "10px",
           fontWeight: "600",
@@ -63,12 +64,38 @@ export default function Dashboard() {
           cursor: "pointer",
           zIndex: 1000,
           transition: "background 0.2s ease",
-          minWidth: "120px"
+          width: "50px",
+          height: "50px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "4px"
         }}
         onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
         onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
       >
-        ⚙️ Settings
+        <div style={{
+          width: "20px",
+          height: "2px",
+          background: theme.accent,
+          borderRadius: "1px",
+          transition: "background 0.2s ease"
+        }} />
+        <div style={{
+          width: "20px",
+          height: "2px",
+          background: theme.accent,
+          borderRadius: "1px",
+          transition: "background 0.2s ease"
+        }} />
+        <div style={{
+          width: "20px",
+          height: "2px",
+          background: theme.accent,
+          borderRadius: "1px",
+          transition: "background 0.2s ease"
+        }} />
       </button>
 
       {/* Logout button */}
@@ -102,15 +129,60 @@ export default function Dashboard() {
         Logout
       </button>
 
-      <h1 style={{ 
-        fontSize: "2.5rem", 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         marginBottom: "2rem",
-        color: theme.accent,
-        textAlign: "center",
-        transition: "color 0.3s ease"
+        gap: "1rem"
       }}>
-        Welcome to your Dashboard
-      </h1>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "60px",
+          height: "60px",
+          background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
+          borderRadius: "16px",
+          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)",
+          transition: "transform 0.3s ease, box-shadow 0.3s ease"
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.boxShadow = "0 12px 25px rgba(0, 0, 0, 0.3)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.2)";
+        }}
+        >
+          <Logo />
+        </div>
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start"
+        }}>
+          <h1 style={{ 
+            fontSize: "2.2rem", 
+            margin: 0,
+            color: theme.accent,
+            fontWeight: "700",
+            transition: "color 0.3s ease"
+          }}>
+            SetPad
+          </h1>
+          <p style={{
+            fontSize: "1rem",
+            margin: 0,
+            color: theme.textSecondary,
+            fontWeight: "500",
+            transition: "color 0.3s ease"
+          }}>
+            Your Fitness Journey
+          </p>
+        </div>
+      </div>
 
       {/* Centered New Log Button */}
       <div style={{
