@@ -14,6 +14,24 @@ export default function TrainingLogTable() {
     const [muscleGroupSuggestions, setMuscleGroupSuggestions] = useState([]);
     const [exerciseSuggestions, setExerciseSuggestions] = useState([]);
     const [currentMuscleGroup, setCurrentMuscleGroup] = useState("");
+    const [showBackButton, setShowBackButton] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Show button if at top of page or scrolling up
+            const isAtTop = currentScrollY < 50;
+            const isScrollingUp = currentScrollY < lastScrollY;
+            
+            setShowBackButton(isAtTop || isScrollingUp);
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
 
     useEffect(() => {
         const loadLog = async () => {
@@ -158,7 +176,10 @@ export default function TrainingLogTable() {
                     fontSize: "1rem",
                     cursor: "pointer",
                     zIndex: 1000,
-                    transition: "background 0.2s ease"
+                    transition: "all 0.3s ease",
+                    opacity: showBackButton ? 1 : 0,
+                    transform: showBackButton ? "translateY(0)" : "translateY(-10px)",
+                    pointerEvents: showBackButton ? "auto" : "none"
                 }}
                 onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                 onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
