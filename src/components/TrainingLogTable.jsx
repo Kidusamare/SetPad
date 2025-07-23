@@ -108,46 +108,51 @@ export default function TrainingLogTable() {
     }, [currentMuscleGroup]);
 
     const updateRow = (index, updatedRow) => {
-        const newRows = [...log.rows];
-        newRows[index] = { ...newRows[index], ...updatedRow };
-        setLog({ ...log, rows: newRows });
+        setLog(prevLog => {
+            const newRows = [...prevLog.rows];
+            newRows[index] = { ...newRows[index], ...updatedRow };
+            return { ...prevLog, rows: newRows };
+        });
     };
 
     const addRow = () => {
-        const newRow = {
-            id: log.rows.length,
-            muscleGroup: "",
-            exercise: "",
-            sets: [{ reps: "", weight: "" }],
-            notes: "",
-            showNotes: false,
-            weightUnit: "lbs"
-        };
-        setLog({ ...log, rows: [...log.rows, newRow] });
+        setLog(prevLog => {
+            const newRow = {
+                id: prevLog.rows.length,
+                muscleGroup: "",
+                exercise: "",
+                sets: [{ reps: "", weight: "" }],
+                notes: "",
+                showNotes: false,
+                weightUnit: "lbs"
+            };
+            return { ...prevLog, rows: [...prevLog.rows, newRow] };
+        });
     };
 
     const deleteLastRow = () => {
-        if (log.rows.length <= 1) return;
-        const newRows = log.rows.slice(0, -1);
-        setLog({ ...log, rows: newRows });
+        setLog(prevLog => {
+            if (prevLog.rows.length <= 1) return prevLog;
+            const newRows = prevLog.rows.slice(0, -1);
+            return { ...prevLog, rows: newRows };
+        });
     };
 
     const handleRename = (e) => {
-        const updated = { ...log, tableName: e.target.value };
-        setLog(updated);
+        setLog(prevLog => ({ ...prevLog, tableName: e.target.value }));
     };
 
     const handleMuscleGroupChange = (muscleGroup) => {
         setCurrentMuscleGroup(muscleGroup);
     };
 
-    useEffect(() => {
-        if (!log) return;
-        const timeout = setTimeout(() => {
+    // Temporarily disable auto-save to fix infinite loop
+    // TODO: Re-implement auto-save with proper state management
+    const saveManually = () => {
+        if (log) {
             manager.saveTable(log);
-        }, 500);
-        return () => clearTimeout(timeout);
-    }, [log]);
+        }
+    };
 
     if (!log) return <div style={{ background: theme.background, minHeight: "100vh" }}></div>;
 
@@ -162,7 +167,22 @@ export default function TrainingLogTable() {
             transition: "background-color 0.3s ease, color 0.3s ease"
         }}>
             <button
-                onClick={() => navigate("/log")}
+                onClick={() => {
+                    console.log(`Navigating back from table ${id} to /log`);
+                    try {
+                        navigate("/log", { replace: true });
+                        // Force navigation if it doesn't work
+                        setTimeout(() => {
+                            if (window.location.pathname.includes('/log/')) {
+                                console.log("Force redirecting to /log");
+                                window.location.href = '/log';
+                            }
+                        }, 100);
+                    } catch (error) {
+                        console.error("Navigation error:", error);
+                        window.location.href = '/log';
+                    }
+                }}
                 style={{
                     position: "fixed",
                     top: "1rem",
@@ -184,7 +204,7 @@ export default function TrainingLogTable() {
                 onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                 onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
             >
-                ← Back to Saved Logs
+                ← Back to Saved Logs (ID: {id})
             </button>
 
             <div style={{ marginBottom: "2rem" }}>
@@ -209,7 +229,7 @@ export default function TrainingLogTable() {
                 <input
                     type="date"
                     value={log.date}
-                    onChange={(e) => setLog({ ...log, date: e.target.value })}
+                    onChange={(e) => setLog(prevLog => ({ ...prevLog, date: e.target.value }))}
                     style={{
                         background: theme.surfaceSecondary,
                         color: theme.text,
@@ -315,6 +335,25 @@ export default function TrainingLogTable() {
                     }}
                 >
                     - Delete Last
+                </button>
+                <button
+                    onClick={saveManually}
+                    style={{
+                        background: theme.accent,
+                        color: theme.background,
+                        padding: "0.7rem 1.4rem",
+                        border: "none",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        marginTop: "1rem",
+                        transition: "background 0.2s ease"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+                    onMouseOut={e => e.currentTarget.style.background = theme.accent}
+                >
+                    💾 Save Workout
                 </button>
             </div>
         </div>

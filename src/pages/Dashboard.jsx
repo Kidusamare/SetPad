@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth } from "../utils/auth";
 import { useTheme } from "../context/ThemeContext";
 import SavedTablesPage from "../components/SavedTablesPage";
 import TrainingLogManager from "../components/TrainingLogManager";
 import Logo from "../components/Logo";
+import ImportPanel from "../components/ImportPanel";
+import AIInsightsPanel from "../components/AIInsightsPanel";
 
 const manager = new TrainingLogManager();
 
@@ -39,21 +39,16 @@ export default function Dashboard() {
 
   const handleNewLog = async () => {
     const newTable = manager.createNewTable();
-    await manager.saveTable(newTable);
+    await manager.createTable(newTable);
     navigate(`/log/${newTable.id}`);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
   };
 
   const handleSettings = () => {
     navigate("/settings");
+  };
+
+  const handleAICoaching = () => {
+    navigate("/ai-coaching");
   };
 
   return (
@@ -66,6 +61,9 @@ export default function Dashboard() {
       position: "relative",
       transition: "background-color 0.3s ease, color 0.3s ease"
     }}>
+      {/* Import Data Panel */}
+      <ImportPanel onClick={() => navigate("/import-data")} />
+
       {/* Hamburger Menu */}
       <button
         onClick={handleSettings}
@@ -120,9 +118,37 @@ export default function Dashboard() {
         }} />
       </button>
 
-      {/* Logout button */}
+      {/* AI Coaching Button */}
       <button
-        onClick={handleLogout}
+        onClick={handleAICoaching}
+        style={{
+          position: "fixed",
+          top: "1rem",
+          right: "8rem",
+          background: theme.accentSecondary,
+          color: theme.accent,
+          padding: "0.7rem 1.4rem",
+          border: "none",
+          borderRadius: "10px",
+          fontWeight: "600",
+          fontSize: "1rem",
+          cursor: "pointer",
+          zIndex: 1000,
+          transition: "all 0.3s ease",
+          minWidth: "120px",
+          opacity: showTopButtons ? 1 : 0,
+          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
+          pointerEvents: showTopButtons ? "auto" : "none"
+        }}
+        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
+        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
+      >
+        🤖 AI Coach
+      </button>
+
+      {/* Settings Button */}
+      <button
+        onClick={handleSettings}
         style={{
           position: "fixed",
           top: "1rem",
@@ -151,7 +177,7 @@ export default function Dashboard() {
           e.currentTarget.style.borderColor = theme.border;
         }}
       >
-        Logout
+        Settings
       </button>
 
       <div style={{
@@ -308,17 +334,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <p style={{ 
-        marginTop: "1rem", 
-        opacity: 0.7,
-        fontSize: "1.1rem",
-        lineHeight: "1.6",
-        color: theme.textSecondary,
-        transition: "color 0.3s ease",
-        textAlign: "center"
-      }}>
-        This space will soon show your analytics, recent logs, and suggested training insights.
-      </p>
+      {/* AI Insights Panel */}
+      <AIInsightsPanel />
     </div>
   );
 }

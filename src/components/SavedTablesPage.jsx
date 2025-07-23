@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
+import { SkeletonLoader } from "./LoadingSpinner";
 
 const manager = new TrainingLogManager();
 
@@ -9,6 +10,7 @@ export default function SavedTablesPage({ previewMode = false }) {
     const navigate = useNavigate();
     const { theme } = useTheme();
     const [tables, setTables] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
     const [showBackButton, setShowBackButton] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
@@ -16,8 +18,15 @@ export default function SavedTablesPage({ previewMode = false }) {
 
     useEffect(() => {
         const fetchTables = async () => {
-            const result = await manager.listTables();
-            setTables(result);
+            try {
+                setIsLoading(true);
+                const result = await manager.listTables();
+                setTables(result);
+            } catch (error) {
+                console.error("Error fetching tables:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchTables();
     }, []);
@@ -41,7 +50,7 @@ export default function SavedTablesPage({ previewMode = false }) {
 
     const handleNewTable = async () => {
         const newTable = manager.createNewTable();
-        await manager.saveTable(newTable);
+        await manager.createTable(newTable);
         navigate(`/log/${newTable.id}`);
     };
 
@@ -191,7 +200,9 @@ export default function SavedTablesPage({ previewMode = false }) {
                 </>
             )}
 
-            {tables.length === 0 ? (
+            {isLoading ? (
+                <SkeletonLoader type="card" count={3} />
+            ) : tables.length === 0 ? (
                 <p style={{ 
                     opacity: 0.7,
                     fontSize: "1.1rem",

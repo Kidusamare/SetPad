@@ -1,55 +1,32 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
-import LoginPage from "./pages/LoginPage";
-import SignUpPage from "./pages/SignUpPage";
-import SettingsPage from "./pages/SettingsPage";
 import SavedTablesPage from "./components/SavedTablesPage";
 import TrainingLogTable from "./components/TrainingLogTable";
+import ImportDataPage from "./pages/ImportDataPage";
+import AICoachingPage from "./pages/AICoachingPage";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }>
-              <Route index element={<SavedTablesPage />} />
-            </Route>
-            
-            <Route path="/log" element={
-              <ProtectedRoute>
-                <SavedTablesPage />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/log/:id" element={
-              <ProtectedRoute>
-                <TrainingLogTable />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            } />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Dashboard />}>
+                <Route index element={<SavedTablesPage />} />
+              </Route>
+              <Route path="/log" element={<SavedTablesPage />} />
+              <Route path="/log/:id" element={<ErrorBoundary><TrainingLogTable /></ErrorBoundary>} />
+              <Route path="/import-data" element={<ErrorBoundary><ImportDataPage /></ErrorBoundary>} />
+              <Route path="/ai-coaching" element={<ErrorBoundary><AICoachingPage /></ErrorBoundary>} />
+            </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
