@@ -26,8 +26,7 @@ const ImportPanel = ({ onClick }) => {
       onMouseEnter={e => e.currentTarget.style.background = theme.accentSecondary}
       onMouseLeave={e => e.currentTarget.style.background = theme.cardBackground}
     >
-      <span role="img" aria-label="import">📥</span>
-      Import Data
+      <span>Import Data</span>
     </div>
   );
 };

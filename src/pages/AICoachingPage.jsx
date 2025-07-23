@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import AIService from "../services/aiCacheService";
 
 const AICoachingPage = () => {
     const { theme } = useTheme();
@@ -17,6 +18,7 @@ const AICoachingPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showBackButton, setShowBackButton] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const [rateLimitMessage, setRateLimitMessage] = useState("");
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -60,23 +62,15 @@ const AICoachingPage = () => {
         setIsLoading(true);
 
         try {
-            // Call AI coaching API
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/ai-coaching`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    message: userMessage.content,
-                    conversation_history: messages.slice(-5) // Send last 5 messages for context
-                }),
+            setRateLimitMessage("");
+            
+            // Use cached AI service with rate limiting
+            const result = await AIService.sendChatMessage({
+                message: userMessage.content,
+                conversation_history: messages.slice(-5) // Send last 5 messages for context
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to get AI response");
-            }
-
-            const data = await response.json();
+            const data = result.data;
             
             const aiMessage = {
                 id: Date.now() + 1,
@@ -88,10 +82,18 @@ const AICoachingPage = () => {
             setMessages(prev => [...prev, aiMessage]);
         } catch (error) {
             console.error("AI coaching error:", error);
+            
+            let errorContent = "I'm sorry, I'm having trouble connecting right now. Please try again.";
+            
+            if (error.message.includes('Rate limited')) {
+                errorContent = error.message;
+                setRateLimitMessage(error.message);
+            }
+            
             const errorMessage = {
                 id: Date.now() + 1,
                 type: "ai",
-                content: "I'm sorry, I'm having trouble connecting right now. Please make sure the backend server is running and try again.",
+                content: errorContent,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);
@@ -108,12 +110,12 @@ const AICoachingPage = () => {
     };
 
     const quickActions = [
-        "📋 Create a workout plan",
-        "🎯 Set fitness goals", 
-        "💪 Analyze my progress",
-        "🍎 Nutrition advice",
-        "🔥 Quick HIIT workout",
-        "🏋️ Form check tips"
+        "Create a workout plan",
+        "Set fitness goals", 
+        "Analyze my progress",
+        "Nutrition advice",
+        "Quick HIIT workout",
+        "Form check tips"
     ];
 
     const handleQuickAction = (action) => {
@@ -331,7 +333,7 @@ const AICoachingPage = () => {
                                     fontSize: "1.2rem",
                                     flexShrink: 0
                                 }}>
-                                    👤
+                                    U
                                 </div>
                             )}
                         </div>

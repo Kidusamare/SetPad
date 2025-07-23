@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { InlineSpinner } from "./LoadingSpinner";
+import AIService from "../services/aiCacheService";
 
 const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) => {
     const { theme } = useTheme();
     const [suggestions, setSuggestions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [cacheInfo, setCacheInfo] = useState({ fromCache: false });
 
     // Exercise database by muscle group
     const exerciseDatabase = {
@@ -56,23 +58,20 @@ const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) 
     const getAISuggestions = async (muscleGroup, currentExercise) => {
         setIsLoading(true);
         try {
-            // Simulate AI API call for smart suggestions
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/ai-coaching/exercise-suggestions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    muscle_group: muscleGroup,
-                    current_exercise: currentExercise,
-                    context: "progressive_overload"
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data.suggestions || [];
-            }
+            // Use cached AI service for exercise suggestions
+            const result = await AIService.getExerciseSuggestions(muscleGroup, currentExercise);
+            
+            setCacheInfo({ fromCache: result.fromCache });
+            console.log(`[Smart Suggestions] ${result.fromCache ? 'Using cached suggestions' : 'Fetched new suggestions'}`);
+            
+            return result.data.suggestions || [];
         } catch (error) {
             console.error("AI suggestions error:", error);
+            
+            // Handle rate limiting gracefully
+            if (error.message.includes('Rate limited')) {
+                console.warn('[Smart Suggestions] Rate limited, using fallback suggestions');
+            }
         }
         
         // Fallback to local database
@@ -151,7 +150,17 @@ const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) 
                     </>
                 ) : (
                     <>
-                        💡 Smart Suggestions ({suggestions.length})
+                        Smart Suggestions ({suggestions.length})
+                        {cacheInfo.fromCache && (
+                            <span style={{
+                                fontSize: "0.7rem",
+                                color: theme.textMuted,
+                                marginLeft: "0.5rem",
+                                opacity: 0.8
+                            }}>
+                                (cached)
+                            </span>
+                        )}
                         <span style={{
                             transform: showSuggestions ? "rotate(180deg)" : "rotate(0deg)",
                             transition: "transform 0.2s ease"
@@ -294,7 +303,7 @@ export const ProgressionSuggestions = ({ currentSets, exercise, onSuggestionAppl
                     gap: "0.3rem"
                 }}
             >
-                📈 Progressive Overload Suggestions
+                Progressive Overload Suggestions
                 <span style={{
                     transform: showSuggestions ? "rotate(180deg)" : "rotate(0deg)",
                     transition: "transform 0.2s ease"

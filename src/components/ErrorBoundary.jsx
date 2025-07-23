@@ -78,7 +78,7 @@ const ErrorFallback = ({ error, errorInfo, resetError }) => {
                     margin: "0 auto 2rem auto",
                     fontSize: "2rem"
                 }}>
-                    ⚠️
+                    !
                 </div>
 
                 {/* Error Title */}

@@ -72,7 +72,7 @@ textarea:focus {
 
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -81,11 +81,18 @@ textarea:focus {
 
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile scrollbar */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
 }
 
 /* Disable transitions for specific elements that shouldn't animate */
@@ -108,10 +115,12 @@ textarea:focus {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-/* Button hover effects */
+/* Modern button styling */
 button {
   position: relative;
   overflow: hidden;
+  font-family: inherit;
+  letter-spacing: 0.02em;
 }
 
 button::before {
@@ -127,6 +136,14 @@ button::before {
 
 button:hover::before {
   left: 100%;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
 }
 
 /* Input focus animations */
@@ -154,4 +171,98 @@ input:focus, textarea:focus {
 
 .theme-toggle:hover {
   transform: scale(1.05);
+}
+
+/* Mobile-first responsive utilities */
+.mobile-container {
+  padding: 1rem;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .mobile-container {
+    padding: 2rem;
+  }
+}
+
+/* Mobile button styles */
+.mobile-button {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+/* Mobile text sizing */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  .large-text {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Mobile spacing */
+.mobile-spacing {
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .mobile-spacing {
+    margin: 1rem 0;
+  }
+}
+
+/* Touch-friendly interactions - WCAG 2.1 AA compliance */
+@media (max-width: 768px) {
+  button, .clickable, input[type="button"], input[type="submit"], input[type="reset"], 
+  .touch-target, [role="button"], .btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 0.75rem 1rem !important;
+    touch-action: manipulation;
+  }
+  
+  /* Ensure form inputs are also touch-friendly */
+  input, select, textarea {
+    min-height: 44px !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+  
+  /* Make clickable areas larger with pseudo-elements when needed */
+  .extend-touch-target {
+    position: relative;
+  }
+  
+  .extend-touch-target::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: transparent;
+  }
+}
+
+/* Mobile card spacing */
+.mobile-card {
+  margin: 0.75rem 0;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-card {
+    margin: 1rem 0;
+    padding: 1.5rem;
+  }
 }

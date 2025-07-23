@@ -3,6 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
 import TrainingLogRow from "./TrainingLogRow";
+import WorkoutTemplates from "./WorkoutTemplates";
+import { useAutoSave } from "../hooks/useAutoSave";
+import { useFormKeyboardNavigation } from "../hooks/useKeyboardShortcuts";
+import { saveWorkoutAsTemplate } from "../services/workoutTemplates";
 
 const manager = new TrainingLogManager();
 
@@ -16,6 +20,23 @@ export default function TrainingLogTable() {
     const [currentMuscleGroup, setCurrentMuscleGroup] = useState("");
     const [showBackButton, setShowBackButton] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [saveStatus, setSaveStatus] = useState('');
+    const [lastSaveTime, setLastSaveTime] = useState(null);
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+    const [templateName, setTemplateName] = useState('');
+    const [templateDescription, setTemplateDescription] = useState('');
+
+    // Window resize detection
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -138,6 +159,12 @@ export default function TrainingLogTable() {
         });
     };
 
+    const handleApplyTemplate = (templateLog) => {
+        setLog(templateLog);
+        setSaveStatus('Template applied');
+        setTimeout(() => setSaveStatus(''), 2000);
+    };
+
     const handleRename = (e) => {
         setLog(prevLog => ({ ...prevLog, tableName: e.target.value }));
     };
@@ -146,26 +173,81 @@ export default function TrainingLogTable() {
         setCurrentMuscleGroup(muscleGroup);
     };
 
-    // Temporarily disable auto-save to fix infinite loop
-    // TODO: Re-implement auto-save with proper state management
-    const saveManually = () => {
-        if (log) {
-            manager.saveTable(log);
+    const handleSaveAsTemplate = async () => {
+        if (!templateName.trim()) {
+            alert('Please enter a template name.');
+            return;
+        }
+
+        const result = await saveWorkoutAsTemplate(log, templateName.trim(), templateDescription.trim());
+        
+        if (result.success) {
+            setSaveStatus(`Template "${templateName}" saved!`);
+            setShowSaveTemplate(false);
+            setTemplateName('');
+            setTemplateDescription('');
+            setTimeout(() => setSaveStatus(''), 3000);
+        } else {
+            alert(result.message);
         }
     };
+
+    // Auto-save function for the hook
+    const saveLog = async (logData) => {
+        if (logData) {
+            try {
+                setSaveStatus('Saving...');
+                await manager.saveTable(logData);
+                setSaveStatus('Saved');
+                setLastSaveTime(new Date());
+                setTimeout(() => setSaveStatus(''), 2000);
+            } catch (error) {
+                setSaveStatus('Save failed');
+                console.error('Save error:', error);
+                setTimeout(() => setSaveStatus(''), 3000);
+                throw error;
+            }
+        }
+    };
+
+    // Use auto-save hook
+    const { save: manualSave } = useAutoSave(
+        saveLog,
+        log,
+        2000, // 2 second delay
+        true  // enabled
+    );
+
+    // Keyboard shortcuts
+    useFormKeyboardNavigation({
+        onSave: () => {
+            if (log) {
+                manualSave();
+                setSaveStatus('Manually saved');
+                setTimeout(() => setSaveStatus(''), 2000);
+            }
+        },
+        onAddRow: (e) => {
+            e.preventDefault();
+            addRow();
+        },
+        enabled: true
+    });
 
     if (!log) return <div style={{ background: theme.background, minHeight: "100vh" }}></div>;
 
     return (
-        <div style={{ 
-            padding: "2rem",
-            paddingTop: "5rem", // Add top padding to prevent overlap with back button
-            color: theme.text, 
-            background: theme.background, 
-            minHeight: "100vh",
-            position: "relative",
-            transition: "background-color 0.3s ease, color 0.3s ease"
-        }}>
+        <div 
+            data-form-container
+            style={{ 
+                padding: "2rem",
+                paddingTop: "5rem", // Add top padding to prevent overlap with back button
+                color: theme.text, 
+                background: theme.background, 
+                minHeight: "100vh",
+                position: "relative",
+                transition: "background-color 0.3s ease, color 0.3s ease"
+            }}>
             <button
                 onClick={() => {
                     console.log(`Navigating back from table ${id} to /log`);
@@ -204,7 +286,7 @@ export default function TrainingLogTable() {
                 onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                 onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
             >
-                ← Back to Saved Logs (ID: {id})
+                ← Back to Saved Logs
             </button>
 
             <div style={{ marginBottom: "2rem" }}>
@@ -285,19 +367,25 @@ export default function TrainingLogTable() {
                 }}>
                     Exercise Management
                 </h3>
-                <button
-                    onClick={addRow}
-                    style={{
-                        background: theme.accentSecondary,
-                        color: theme.accent,
-                        padding: "0.7rem 1.4rem",
-                        border: "none",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        marginRight: "1rem",
-                        marginTop: "1rem",
+                
+                <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                    marginBottom: '1rem'
+                }}>
+                    <button
+                        onClick={addRow}
+                        style={{
+                            background: theme.accentSecondary,
+                            color: theme.accent,
+                            padding: "0.7rem 1.4rem",
+                            border: "none",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            minHeight: '44px',
                         transition: "background 0.2s ease"
                     }}
                     onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
@@ -305,6 +393,59 @@ export default function TrainingLogTable() {
                 >
                     + Add Exercise
                 </button>
+                
+                <button
+                    onClick={() => setShowTemplates(true)}
+                    style={{
+                        background: theme.surfaceSecondary,
+                        color: theme.accent,
+                        padding: "0.7rem 1.4rem",
+                        border: `1px solid ${theme.accent}`,
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        minHeight: '44px',
+                        transition: "all 0.2s ease"
+                    }}
+                    onMouseOver={e => {
+                        e.currentTarget.style.background = theme.accent;
+                        e.currentTarget.style.color = theme.background;
+                    }}
+                    onMouseOut={e => {
+                        e.currentTarget.style.background = theme.surfaceSecondary;
+                        e.currentTarget.style.color = theme.accent;
+                    }}
+                >
+                    Use Template
+                </button>
+                
+                <button
+                    onClick={() => setShowSaveTemplate(true)}
+                    style={{
+                        background: theme.surfaceSecondary,
+                        color: theme.accent,
+                        padding: "0.7rem 1.4rem",
+                        border: `1px solid ${theme.border}`,
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        minHeight: '44px',
+                        transition: "all 0.2s ease"
+                    }}
+                    onMouseOver={e => {
+                        e.currentTarget.style.background = theme.surfaceTertiary;
+                        e.currentTarget.style.borderColor = theme.accent;
+                    }}
+                    onMouseOut={e => {
+                        e.currentTarget.style.background = theme.surfaceSecondary;
+                        e.currentTarget.style.borderColor = theme.border;
+                    }}
+                >
+                    💾 Save as Template
+                </button>
+            </div>
                 <button
                     onClick={deleteLastRow}
                     disabled={log.rows.length <= 1}
@@ -337,7 +478,11 @@ export default function TrainingLogTable() {
                     - Delete Last
                 </button>
                 <button
-                    onClick={saveManually}
+                    onClick={() => {
+                        manualSave();
+                        setSaveStatus('Manually saved');
+                        setTimeout(() => setSaveStatus(''), 2000);
+                    }}
                     style={{
                         background: theme.accent,
                         color: theme.background,
@@ -353,9 +498,189 @@ export default function TrainingLogTable() {
                     onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                     onMouseOut={e => e.currentTarget.style.background = theme.accent}
                 >
-                    💾 Save Workout
+                    {saveStatus === 'Saving...' ? 'Saving...' : 
+                     saveStatus === 'Saved' ? 'Saved ✓' : 
+                     saveStatus === 'Save failed' ? 'Save Failed ✗' : 
+                     'Save Workout (Ctrl+S)'}
                 </button>
+                
+                {/* Save Status Indicator */}
+                {(saveStatus || lastSaveTime) && (
+                    <div style={{
+                        marginTop: '0.5rem',
+                        fontSize: '0.8rem',
+                        color: saveStatus === 'Save failed' ? theme.danger : theme.textSecondary,
+                        textAlign: 'center'
+                    }}>
+                        {saveStatus || (lastSaveTime && `Last saved: ${lastSaveTime.toLocaleTimeString()}`)}
+                    </div>
+                )}
             </div>
+            
+            {/* Workout Templates Modal */}
+            {showTemplates && (
+                <WorkoutTemplates
+                    currentLog={log}
+                    onApplyTemplate={handleApplyTemplate}
+                    onClose={() => setShowTemplates(false)}
+                />
+            )}
+
+            {/* Save as Template Modal */}
+            {showSaveTemplate && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(0, 0, 0, 0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 2000,
+                    padding: "1rem"
+                }}
+                onClick={() => setShowSaveTemplate(false)}
+                >
+                    <div style={{
+                        background: theme.cardBackground,
+                        borderRadius: "20px",
+                        padding: "2rem",
+                        maxWidth: "90vw",
+                        width: "500px",
+                        border: `1px solid ${theme.cardBorder}`,
+                        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 style={{
+                            margin: "0 0 1.5rem 0",
+                            color: theme.accent,
+                            fontSize: "1.5rem",
+                            textAlign: "center"
+                        }}>
+                            Save as Template
+                        </h3>
+                        
+                        <div style={{ marginBottom: "1rem" }}>
+                            <label style={{
+                                display: "block",
+                                marginBottom: "0.5rem",
+                                color: theme.text,
+                                fontWeight: "600"
+                            }}>
+                                Template Name *
+                            </label>
+                            <input
+                                type="text"
+                                value={templateName}
+                                onChange={(e) => setTemplateName(e.target.value)}
+                                placeholder="e.g., My Upper Body Workout"
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem",
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "8px",
+                                    background: theme.surfaceSecondary,
+                                    color: theme.text,
+                                    fontSize: "1rem",
+                                    boxSizing: "border-box"
+                                }}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: "2rem" }}>
+                            <label style={{
+                                display: "block",
+                                marginBottom: "0.5rem",
+                                color: theme.text,
+                                fontWeight: "600"
+                            }}>
+                                Description (optional)
+                            </label>
+                            <textarea
+                                value={templateDescription}
+                                onChange={(e) => setTemplateDescription(e.target.value)}
+                                placeholder="Brief description of this workout template..."
+                                rows={3}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem",
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "8px",
+                                    background: theme.surfaceSecondary,
+                                    color: theme.text,
+                                    fontSize: "1rem",
+                                    boxSizing: "border-box",
+                                    resize: "vertical"
+                                }}
+                            />
+                        </div>
+
+                        <div style={{
+                            display: "flex",
+                            gap: "1rem",
+                            justifyContent: "flex-end"
+                        }}>
+                            <button
+                                onClick={() => setShowSaveTemplate(false)}
+                                style={{
+                                    background: theme.surfaceSecondary,
+                                    color: theme.textSecondary,
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "8px",
+                                    padding: "0.8rem 1.5rem",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    fontSize: "1rem",
+                                    minHeight: "44px",
+                                    transition: "all 0.2s ease"
+                                }}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = theme.surfaceTertiary;
+                                    e.currentTarget.style.borderColor = theme.textMuted;
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = theme.surfaceSecondary;
+                                    e.currentTarget.style.borderColor = theme.border;
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveAsTemplate}
+                                disabled={!templateName.trim()}
+                                style={{
+                                    background: templateName.trim() ? theme.accent : theme.textMuted,
+                                    color: templateName.trim() ? theme.background : theme.textSecondary,
+                                    border: "none",
+                                    borderRadius: "8px",
+                                    padding: "0.8rem 1.5rem",
+                                    cursor: templateName.trim() ? "pointer" : "not-allowed",
+                                    fontWeight: "600",
+                                    fontSize: "1rem",
+                                    minHeight: "44px",
+                                    transition: "all 0.2s ease"
+                                }}
+                                onMouseOver={e => {
+                                    if (templateName.trim()) {
+                                        e.currentTarget.style.background = theme.accentHover;
+                                    }
+                                }}
+                                onMouseOut={e => {
+                                    if (templateName.trim()) {
+                                        e.currentTarget.style.background = theme.accent;
+                                    }
+                                }}
+                            >
+                                💾 Save Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

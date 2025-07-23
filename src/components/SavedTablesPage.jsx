@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
 import { SkeletonLoader } from "./LoadingSpinner";
+import { DataExportService } from "../services/dataExport";
+import SearchComponent from "./SearchComponent";
 
 const manager = new TrainingLogManager();
 
@@ -15,6 +17,8 @@ export default function SavedTablesPage({ previewMode = false }) {
     const [showBackButton, setShowBackButton] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [deletePopup, setDeletePopup] = useState({ show: false, tableId: null, tableName: "" });
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [showSearch, setShowSearch] = useState(false);
 
     useEffect(() => {
         const fetchTables = async () => {
@@ -29,6 +33,16 @@ export default function SavedTablesPage({ previewMode = false }) {
             }
         };
         fetchTables();
+    }, []);
+
+    // Window resize detection
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Scroll detection for back button
@@ -74,6 +88,69 @@ export default function SavedTablesPage({ previewMode = false }) {
         setDeletePopup({ show: false, tableId: null, tableName: "" });
     };
 
+    const handleExportAllWorkouts = async () => {
+        try {
+            if (tables.length === 0) return;
+            
+            // Load full workout data for all tables
+            const fullWorkouts = await Promise.all(
+                tables.map(async (table) => {
+                    const fullTable = await manager.loadTable(table.id);
+                    return {
+                        ...fullTable,
+                        date: table.date,
+                        tableName: table.tableName
+                    };
+                })
+            );
+            
+            await DataExportService.exportAllWorkoutsToCSV(fullWorkouts, 'all_workouts');
+        } catch (error) {
+            console.error('Error exporting workouts:', error);
+            alert('Failed to export workouts. Please try again.');
+        }
+    };
+
+    const handleExportToPDF = async () => {
+        try {
+            if (tables.length === 0) return;
+            
+            // Load full workout data for all tables
+            const fullWorkouts = await Promise.all(
+                tables.map(async (table) => {
+                    const fullTable = await manager.loadTable(table.id);
+                    return {
+                        ...fullTable,
+                        date: table.date,
+                        tableName: table.tableName
+                    };
+                })
+            );
+            
+            await DataExportService.exportToPDF(fullWorkouts, 'workout_report');
+        } catch (error) {
+            console.error('Error exporting to PDF:', error);
+            alert('Failed to export to PDF. Please try again.');
+        }
+    };
+
+    const handleExportSingleWorkout = async (tableId, tableName) => {
+        try {
+            const fullTable = await manager.loadTable(tableId);
+            const table = tables.find(t => t.id === tableId);
+            const workoutData = {
+                ...fullTable,
+                date: table.date,
+                tableName: table.tableName
+            };
+            
+            await DataExportService.exportWorkoutToCSV(workoutData);
+        } catch (error) {
+            console.error('Error exporting workout:', error);
+            alert('Failed to export workout. Please try again.');
+        }
+    };
+
     // Format date for display
     const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -89,8 +166,8 @@ export default function SavedTablesPage({ previewMode = false }) {
     return (
         <div
             style={{
-                padding: "2rem",
-                paddingTop: previewMode ? "1rem" : "4rem",
+                padding: windowWidth <= 768 ? "1rem" : "2rem",
+                paddingTop: previewMode ? "1rem" : (windowWidth <= 768 ? "3rem" : "4rem"),
                 background: theme.background,
                 minHeight: previewMode ? "auto" : "100vh",
                 color: theme.text,
@@ -130,8 +207,8 @@ export default function SavedTablesPage({ previewMode = false }) {
             {!previewMode && (
                 <>
                     <h1 style={{ 
-                        fontSize: "2.5rem", 
-                        marginBottom: "2rem",
+                        fontSize: windowWidth <= 768 ? "2rem" : "2.5rem", 
+                        marginBottom: windowWidth <= 768 ? "1.5rem" : "2rem",
                         color: theme.accent,
                         textAlign: "center",
                         transition: "color 0.3s ease"
@@ -148,9 +225,9 @@ export default function SavedTablesPage({ previewMode = false }) {
                     }}>
                         <div style={{
                             position: "relative",
-                            width: "160px",
-                            height: "60px",
-                            background: `linear-gradient(to top, ${theme.accentSecondary}, ${theme.accent}, ${theme.accentHover})`,
+                            width: windowWidth <= 768 ? "140px" : "160px",
+                            height: windowWidth <= 768 ? "50px" : "60px",
+                            background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
                             borderRadius: "50px",
                             border: "none",
                             outline: "none",
@@ -197,6 +274,78 @@ export default function SavedTablesPage({ previewMode = false }) {
                             </span>
                         </div>
                     </div>
+
+                    {/* Export Buttons */}
+                    {tables.length > 0 && (
+                        <div style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: "1rem",
+                            marginBottom: "2rem",
+                            flexWrap: "wrap"
+                        }}>
+                            <button
+                                onClick={handleExportAllWorkouts}
+                                style={{
+                                    background: theme.surfaceSecondary,
+                                    color: theme.accent,
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "12px",
+                                    padding: windowWidth <= 768 ? "0.6rem 1rem" : "0.8rem 1.5rem",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    fontSize: windowWidth <= 768 ? "0.9rem" : "1rem",
+                                    transition: "all 0.3s ease",
+                                    minHeight: "44px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem"
+                                }}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = theme.surfaceTertiary;
+                                    e.currentTarget.style.borderColor = theme.accent;
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = theme.surfaceSecondary;
+                                    e.currentTarget.style.borderColor = theme.border;
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
+                            >
+                                📊 Export CSV
+                            </button>
+                            <button
+                                onClick={handleExportToPDF}
+                                style={{
+                                    background: theme.surfaceSecondary,
+                                    color: theme.accent,
+                                    border: `1px solid ${theme.border}`,
+                                    borderRadius: "12px",
+                                    padding: windowWidth <= 768 ? "0.6rem 1rem" : "0.8rem 1.5rem",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    fontSize: windowWidth <= 768 ? "0.9rem" : "1rem",
+                                    transition: "all 0.3s ease",
+                                    minHeight: "44px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem"
+                                }}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = theme.surfaceTertiary;
+                                    e.currentTarget.style.borderColor = theme.accent;
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = theme.surfaceSecondary;
+                                    e.currentTarget.style.borderColor = theme.border;
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
+                            >
+                                📄 Export PDF
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
 
@@ -219,23 +368,29 @@ export default function SavedTablesPage({ previewMode = false }) {
                         <li
                             key={table.id}
                             style={{
-                                marginBottom: "1rem",
-                                padding: "1.5rem",
-                                background: theme.cardBackground,
-                                borderRadius: "12px",
+                                marginBottom: windowWidth <= 768 ? "0.75rem" : "1rem",
+                                padding: windowWidth <= 768 ? "1rem" : "1.5rem",
+                                background: "rgba(255, 255, 255, 0.03)",
+                                borderRadius: "16px",
+                                backdropFilter: "blur(20px)",
                                 display: "flex",
+                                flexDirection: windowWidth <= 480 ? "column" : "row",
                                 justifyContent: "space-between",
-                                alignItems: "center",
-                                border: `1px solid ${theme.cardBorder}`,
+                                alignItems: windowWidth <= 480 ? "stretch" : "center",
+                                border: `1px solid rgba(255, 255, 255, 0.08)`,
+                                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+                                gap: windowWidth <= 480 ? "1rem" : "0",
                                 transition: "transform 0.2s, border-color 0.2s, background-color 0.3s ease"
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "translateY(-2px)";
-                                e.currentTarget.style.borderColor = theme.accent;
+                                e.currentTarget.style.transform = "translateY(-4px)";
+                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.15)";
                             }}
                             onMouseLeave={(e) => {
                                 e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.borderColor = theme.cardBorder;
+                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
+                                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.1)";
                             }}
                         >
                             <div 
@@ -247,7 +402,7 @@ export default function SavedTablesPage({ previewMode = false }) {
                                 onClick={() => handleOpenTable(table.id)}
                             >
                                 <strong style={{ 
-                                    fontSize: "1.2rem",
+                                    fontSize: windowWidth <= 768 ? "1.1rem" : "1.2rem",
                                     color: theme.text,
                                     transition: "color 0.3s ease",
                                     display: "block",
@@ -266,7 +421,7 @@ export default function SavedTablesPage({ previewMode = false }) {
                                         fontWeight: "600",
                                         transition: "color 0.3s ease"
                                     }}>
-                                        📅 {formatDate(table.date)}
+                                        {formatDate(table.date)}
                                     </span>
                                     {table.lastOpened && (
                                         <span style={{ 
@@ -281,29 +436,71 @@ export default function SavedTablesPage({ previewMode = false }) {
                                 </div>
                             </div>
                             {!previewMode && (
-                                <button
-                                    onClick={() => handleDeleteTable(table.id, table.tableName)}
-                                    style={{
-                                        background: theme.surfaceSecondary,
-                                        color: theme.textSecondary,
-                                        border: `1px solid ${theme.border}`,
-                                        borderRadius: "8px",
-                                        padding: "0.5rem 1rem",
-                                        cursor: "pointer",
-                                        fontWeight: "600",
-                                        transition: "background 0.2s ease, border-color 0.2s ease"
-                                    }}
-                                    onMouseOver={e => {
-                                        e.currentTarget.style.background = theme.surfaceTertiary;
-                                        e.currentTarget.style.borderColor = theme.textMuted;
-                                    }}
-                                    onMouseOut={e => {
-                                        e.currentTarget.style.background = theme.surfaceSecondary;
-                                        e.currentTarget.style.borderColor = theme.border;
-                                    }}
-                                >
-                                    Delete
-                                </button>
+                                <div style={{
+                                    display: "flex",
+                                    gap: "0.5rem",
+                                    alignItems: "center",
+                                    flexWrap: "wrap"
+                                }}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleExportSingleWorkout(table.id, table.tableName);
+                                        }}
+                                        style={{
+                                            background: theme.surfaceSecondary,
+                                            color: theme.accent,
+                                            border: `1px solid ${theme.border}`,
+                                            borderRadius: "8px",
+                                            padding: "0.5rem 0.8rem",
+                                            cursor: "pointer",
+                                            fontWeight: "600",
+                                            fontSize: "0.8rem",
+                                            transition: "all 0.2s ease",
+                                            minHeight: "44px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.3rem"
+                                        }}
+                                        onMouseOver={e => {
+                                            e.currentTarget.style.background = theme.surfaceTertiary;
+                                            e.currentTarget.style.borderColor = theme.accent;
+                                            e.currentTarget.style.transform = "translateY(-1px)";
+                                        }}
+                                        onMouseOut={e => {
+                                            e.currentTarget.style.background = theme.surfaceSecondary;
+                                            e.currentTarget.style.borderColor = theme.border;
+                                            e.currentTarget.style.transform = "translateY(0)";
+                                        }}
+                                    >
+                                        📊 Export
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTable(table.id, table.tableName)}
+                                        style={{
+                                            background: theme.surfaceSecondary,
+                                            color: theme.textSecondary,
+                                            border: `1px solid ${theme.border}`,
+                                            borderRadius: "8px",
+                                            padding: "0.5rem 1rem",
+                                            cursor: "pointer",
+                                            fontWeight: "600",
+                                            fontSize: "0.8rem",
+                                            transition: "background 0.2s ease, border-color 0.2s ease",
+                                            minHeight: "44px"
+                                        }}
+                                        onMouseOver={e => {
+                                            e.currentTarget.style.background = theme.surfaceTertiary;
+                                            e.currentTarget.style.borderColor = theme.textMuted;
+                                        }}
+                                        onMouseOut={e => {
+                                            e.currentTarget.style.background = theme.surfaceSecondary;
+                                            e.currentTarget.style.borderColor = theme.border;
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             )}
                         </li>
                     ))}
@@ -328,13 +525,14 @@ export default function SavedTablesPage({ previewMode = false }) {
                 onClick={cancelDelete}
                 >
                     <div style={{
-                        background: theme.cardBackground,
-                        borderRadius: "16px",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        borderRadius: "20px",
                         padding: "2rem",
                         maxWidth: "90vw",
                         width: "400px",
-                        border: `1px solid ${theme.cardBorder}`,
-                        boxShadow: theme.shadow,
+                        border: `1px solid rgba(255, 255, 255, 0.1)`,
+                        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+                        backdropFilter: "blur(20px)",
                         animation: "popupSlideIn 0.3s ease-out"
                     }}
                     onClick={(e) => e.stopPropagation()}
@@ -355,7 +553,7 @@ export default function SavedTablesPage({ previewMode = false }) {
                                 justifyContent: "center",
                                 border: "2px solid rgba(239, 68, 68, 0.3)"
                             }}>
-                                <span style={{ fontSize: "1.5rem", color: "#ef4444" }}>⚠️</span>
+                                <span style={{ fontSize: "1.5rem", color: "#ef4444" }}>!</span>
                             </div>
                             <div>
                                 <h3 style={{

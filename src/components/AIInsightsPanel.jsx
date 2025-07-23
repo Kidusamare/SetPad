@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import AIService from "../services/aiCacheService";
 
 const AIInsightsPanel = () => {
     const { theme } = useTheme();
@@ -8,27 +9,33 @@ const AIInsightsPanel = () => {
     const [insights, setInsights] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [cacheInfo, setCacheInfo] = useState({ fromCache: false, cacheAge: 0 });
 
     useEffect(() => {
         fetchAIInsights();
     }, []);
 
-    const fetchAIInsights = async () => {
+    const fetchAIInsights = async (forceRefresh = false) => {
         try {
             setIsLoading(true);
             setError(null);
             
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/ai-coaching/workout-analysis`);
+            const result = await AIService.getInsights(forceRefresh);
+            setInsights(result.data);
+            setCacheInfo({
+                fromCache: result.fromCache,
+                cacheAge: result.cacheAge || 0
+            });
             
-            if (!response.ok) {
-                throw new Error("Failed to fetch AI insights");
-            }
-            
-            const data = await response.json();
-            setInsights(data);
+            console.log(`[AI Insights] Data ${result.fromCache ? 'loaded from cache' : 'fetched from API'}`);
         } catch (err) {
             console.error("Error fetching AI insights:", err);
             setError(err.message);
+            
+            // If rate limited, show more helpful error message
+            if (err.message.includes('Rate limited')) {
+                setError('Please wait before requesting new insights. Using cached data when available.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -85,7 +92,7 @@ const AIInsightsPanel = () => {
                         justifyContent: "center",
                         fontSize: "1.5rem"
                     }}>
-                        🤖
+                        AI
                     </div>
                     <div>
                         <h3 style={{
@@ -177,7 +184,7 @@ const AIInsightsPanel = () => {
                         justifyContent: "center",
                         fontSize: "1.5rem"
                     }}>
-                        ⚠️
+                        !
                     </div>
                     <div>
                         <h3 style={{
@@ -226,7 +233,7 @@ const AIInsightsPanel = () => {
                         onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                         onMouseOut={e => e.currentTarget.style.background = theme.accent}
                     >
-                        🤖 Chat with AI Coach
+                        AI Chat with AI Coach
                     </button>
                 </div>
             </div>
@@ -267,7 +274,7 @@ const AIInsightsPanel = () => {
                         justifyContent: "center",
                         fontSize: "1.5rem"
                     }}>
-                        🤖
+                        AI
                     </div>
                     <div>
                         <h3 style={{
@@ -282,7 +289,10 @@ const AIInsightsPanel = () => {
                             color: theme.textSecondary,
                             fontSize: "0.9rem"
                         }}>
-                            Personalized analysis of your fitness journey
+                            {cacheInfo.fromCache ? 
+                                `Cached insights (${Math.floor(cacheInfo.cacheAge / (1000 * 60 * 60))}h old)` : 
+                                "Fresh personalized analysis"
+                            }
                         </p>
                     </div>
                 </div>
@@ -302,7 +312,7 @@ const AIInsightsPanel = () => {
                     onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                     onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
                 >
-                    💬 Chat with AI
+                    Chat with AI
                 </button>
             </div>
 
@@ -425,7 +435,7 @@ const AIInsightsPanel = () => {
                     alignItems: "center",
                     gap: "0.5rem"
                 }}>
-                    🧠 AI Analysis & Recommendations
+                    AI Analysis & Recommendations
                 </h4>
                 
                 <div style={{
@@ -470,11 +480,11 @@ const AIInsightsPanel = () => {
                     onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
                     onMouseOut={e => e.currentTarget.style.background = theme.accent}
                 >
-                    🤖 Get Personalized Coaching
+                    Get Personalized Coaching
                 </button>
                 
                 <button
-                    onClick={fetchAIInsights}
+                    onClick={() => fetchAIInsights(true)}
                     style={{
                         background: theme.surfaceSecondary,
                         color: theme.text,
@@ -495,7 +505,7 @@ const AIInsightsPanel = () => {
                         e.currentTarget.style.borderColor = theme.border;
                     }}
                 >
-                    🔄 Refresh Insights
+                    Force Refresh Insights
                 </button>
             </div>
 

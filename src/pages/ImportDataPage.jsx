@@ -206,7 +206,7 @@ const ImportDataPage = () => {
             transition: "all 0.3s ease"
           }}
         >
-          {isLoading ? "🔄 Processing..." : "🚀 Import with AI"}
+          {isLoading ? "Processing..." : "Import with AI"}
         </button>
 
         {status && (
@@ -239,7 +239,7 @@ const ImportDataPage = () => {
               marginBottom: "1rem",
               fontSize: "1.1rem"
             }}>
-              ✅ Imported Workout Sessions ({importedTables.length}):
+              Imported Workout Sessions ({importedTables.length}):
             </h3>
             {importedTables.map((table, index) => (
               <div

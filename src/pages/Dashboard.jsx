@@ -15,6 +15,17 @@ export default function Dashboard() {
   const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
   const [showTopButtons, setShowTopButtons] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Window resize detection
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Scroll detection for top buttons
   useEffect(() => {
@@ -50,14 +61,22 @@ export default function Dashboard() {
   const handleAICoaching = () => {
     navigate("/ai-coaching");
   };
+  
+  const handleProgress = () => {
+    navigate("/progress");
+  };
+
+  const handleSearch = () => {
+    navigate("/search");
+  };
 
   return (
     <div style={{ 
       background: theme.background, 
       minHeight: "100vh", 
       color: theme.text, 
-      padding: "2rem",
-      paddingTop: "5rem",
+      padding: "1rem",
+      paddingTop: "4rem",
       position: "relative",
       transition: "background-color 0.3s ease, color 0.3s ease"
     }}>
@@ -92,8 +111,8 @@ export default function Dashboard() {
           transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
           pointerEvents: showTopButtons ? "auto" : "none"
         }}
-        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
+        onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+        onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
       >
         <div style={{
           width: "20px",
@@ -118,81 +137,136 @@ export default function Dashboard() {
         }} />
       </button>
 
-      {/* AI Coaching Button */}
-      <button
-        onClick={handleAICoaching}
-        style={{
-          position: "fixed",
-          top: "1rem",
-          right: "8rem",
-          background: theme.accentSecondary,
-          color: theme.accent,
-          padding: "0.7rem 1.4rem",
-          border: "none",
-          borderRadius: "10px",
-          fontWeight: "600",
-          fontSize: "1rem",
-          cursor: "pointer",
-          zIndex: 1000,
-          transition: "all 0.3s ease",
-          minWidth: "120px",
-          opacity: showTopButtons ? 1 : 0,
-          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
-          pointerEvents: showTopButtons ? "auto" : "none"
-        }}
-        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
-      >
-        🤖 AI Coach
-      </button>
+      {/* Top Navigation Buttons Container */}
+      <div style={{
+        position: "fixed",
+        top: "1rem",
+        right: "1rem",
+        display: "flex",
+        gap: "0.5rem",
+        zIndex: 1000,
+        opacity: showTopButtons ? 1 : 0,
+        transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
+        pointerEvents: showTopButtons ? "auto" : "none",
+        transition: "all 0.3s ease",
+        flexWrap: windowWidth <= 768 ? "wrap" : "nowrap",
+        justifyContent: "flex-end",
+        maxWidth: windowWidth <= 768 ? "200px" : "300px"
+      }}>
+        {/* Search Button */}
+        <button
+          onClick={handleSearch}
+          style={{
+            background: "rgba(255, 255, 255, 0.1)",
+            color: theme.accent,
+            padding: windowWidth <= 768 ? "0.5rem 0.8rem" : "0.7rem 1rem",
+            border: `1px solid rgba(255, 255, 255, 0.2)`,
+            borderRadius: "8px",
+            backdropFilter: "blur(20px)",
+            fontWeight: "600",
+            fontSize: windowWidth <= 768 ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            minHeight: "40px",
+            whiteSpace: "nowrap"
+          }}
+          onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
+        >
+          {windowWidth <= 768 ? "🔍" : "Search"}
+        </button>
 
-      {/* Settings Button */}
-      <button
-        onClick={handleSettings}
-        style={{
-          position: "fixed",
-          top: "1rem",
-          right: "1rem",
-          background: theme.surfaceSecondary,
-          color: theme.textSecondary,
-          padding: "0.7rem 1.4rem",
-          border: `1px solid ${theme.border}`,
-          borderRadius: "10px",
-          fontWeight: "600",
-          fontSize: "1rem",
-          cursor: "pointer",
-          zIndex: 1000,
-          transition: "all 0.3s ease",
-          minWidth: "100px",
-          opacity: showTopButtons ? 1 : 0,
-          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
-          pointerEvents: showTopButtons ? "auto" : "none"
-        }}
-        onMouseOver={e => {
-          e.currentTarget.style.background = theme.surfaceTertiary;
-          e.currentTarget.style.borderColor = theme.accent;
-        }}
-        onMouseOut={e => {
-          e.currentTarget.style.background = theme.surfaceSecondary;
-          e.currentTarget.style.borderColor = theme.border;
-        }}
-      >
-        Settings
-      </button>
+        {/* Progress Button */}
+        <button
+          onClick={handleProgress}
+          style={{
+            background: "rgba(255, 255, 255, 0.1)",
+            color: theme.accent,
+            padding: windowWidth <= 768 ? "0.5rem 0.8rem" : "0.7rem 1rem",
+            border: `1px solid rgba(255, 255, 255, 0.2)`,
+            borderRadius: "8px",
+            backdropFilter: "blur(20px)",
+            fontWeight: "600",
+            fontSize: windowWidth <= 768 ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            minHeight: "40px",
+            whiteSpace: "nowrap"
+          }}
+          onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
+        >
+          {windowWidth <= 768 ? "📊" : "Progress"}
+        </button>
+        
+        {/* AI Coaching Button */}
+        <button
+          onClick={handleAICoaching}
+          style={{
+            background: "rgba(255, 255, 255, 0.1)",
+            color: theme.accent,
+            padding: windowWidth <= 768 ? "0.5rem 0.8rem" : "0.7rem 1rem",
+            border: `1px solid rgba(255, 255, 255, 0.2)`,
+            borderRadius: "8px",
+            backdropFilter: "blur(20px)",
+            fontWeight: "600",
+            fontSize: windowWidth <= 768 ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            minHeight: "40px",
+            whiteSpace: "nowrap"
+          }}
+          onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
+        >
+          {windowWidth <= 768 ? "🤖" : "AI Coach"}
+        </button>
+
+        {/* Settings Button */}
+        <button
+          onClick={handleSettings}
+          style={{
+            background: "rgba(255, 255, 255, 0.05)",
+            color: theme.textSecondary,
+            padding: windowWidth <= 768 ? "0.5rem 0.8rem" : "0.7rem 1rem",
+            border: `1px solid rgba(255, 255, 255, 0.1)`,
+            borderRadius: "8px",
+            backdropFilter: "blur(20px)",
+            fontWeight: "600",
+            fontSize: windowWidth <= 768 ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            minHeight: "40px",
+            whiteSpace: "nowrap"
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.3)";
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+          }}
+        >
+          {windowWidth <= 768 ? "⚙️" : "Settings"}
+        </button>
+      </div>
 
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: "2rem",
-        gap: "1rem"
+        marginBottom: windowWidth <= 768 ? "1.5rem" : "2rem",
+        gap: windowWidth <= 768 ? "0.75rem" : "1rem",
+        flexDirection: windowWidth <= 480 ? "column" : "row",
+        textAlign: "center"
       }}>
         <div style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: "60px",
-          height: "60px",
+          width: windowWidth <= 768 ? "50px" : "60px",
+          height: windowWidth <= 768 ? "50px" : "60px",
           background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
           borderRadius: "16px",
           boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)",
@@ -215,7 +289,7 @@ export default function Dashboard() {
           alignItems: "flex-start"
         }}>
           <h1 style={{ 
-            fontSize: "2.2rem", 
+            fontSize: windowWidth <= 768 ? "1.8rem" : "2.2rem", 
             margin: 0,
             color: theme.accent,
             fontWeight: "700",
@@ -224,7 +298,7 @@ export default function Dashboard() {
             SetPad
           </h1>
           <p style={{
-            fontSize: "1rem",
+            fontSize: windowWidth <= 768 ? "0.9rem" : "1rem",
             margin: 0,
             color: theme.textSecondary,
             fontWeight: "500",
@@ -244,9 +318,9 @@ export default function Dashboard() {
       }}>
         <div style={{
           position: "relative",
-          width: "200px",
-          height: "70px",
-          background: `linear-gradient(to top, ${theme.accentSecondary}, ${theme.accent}, ${theme.accentHover})`,
+          width: windowWidth <= 768 ? "180px" : "200px",
+          height: windowWidth <= 768 ? "60px" : "70px",
+          background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
           borderRadius: "50px",
           border: "none",
           outline: "none",
@@ -298,15 +372,24 @@ export default function Dashboard() {
         onClick={handleOpenSaved}
         style={{
           overflow: "hidden",
-          borderRadius: "1rem",
-          border: `2px solid ${theme.accent}`,
+          borderRadius: "16px",
+          border: `1px solid rgba(255, 255, 255, 0.1)`,
           position: "relative",
           cursor: "pointer",
-          transition: "transform 0.3s ease, border-color 0.3s ease",
-          marginBottom: "2rem"
+          transition: "transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+          marginBottom: "2rem",
+          background: "rgba(255, 255, 255, 0.02)",
+          backdropFilter: "blur(20px)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.02)";
+          e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
+        }}
       >
         <div style={{ 
           pointerEvents: "none", 
