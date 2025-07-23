@@ -81,61 +81,7 @@ export default function Dashboard() {
       transition: "background-color 0.3s ease, color 0.3s ease"
     }}>
       {/* Import Data Panel */}
-      <ImportPanel onClick={() => navigate("/import-data")} />
-
-      {/* Hamburger Menu */}
-      <button
-        onClick={handleSettings}
-        style={{
-          position: "fixed",
-          top: "1rem",
-          left: "1rem",
-          background: theme.accentSecondary,
-          color: theme.accent,
-          padding: "0.7rem",
-          border: "none",
-          borderRadius: "10px",
-          fontWeight: "600",
-          fontSize: "1rem",
-          cursor: "pointer",
-          zIndex: 1000,
-          transition: "all 0.3s ease",
-          width: "50px",
-          height: "50px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "4px",
-          opacity: showTopButtons ? 1 : 0,
-          transform: showTopButtons ? "translateY(0)" : "translateY(-10px)",
-          pointerEvents: showTopButtons ? "auto" : "none"
-        }}
-        onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
-        onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
-      >
-        <div style={{
-          width: "20px",
-          height: "2px",
-          background: theme.accent,
-          borderRadius: "1px",
-          transition: "background 0.2s ease"
-        }} />
-        <div style={{
-          width: "20px",
-          height: "2px",
-          background: theme.accent,
-          borderRadius: "1px",
-          transition: "background 0.2s ease"
-        }} />
-        <div style={{
-          width: "20px",
-          height: "2px",
-          background: theme.accent,
-          borderRadius: "1px",
-          transition: "background 0.2s ease"
-        }} />
-      </button>
+      
 
       {/* Top Navigation Buttons Container */}
       <div style={{
@@ -220,6 +166,28 @@ export default function Dashboard() {
           onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
         >
           {windowWidth <= 768 ? "🤖" : "AI Coach"}
+        </button>
+        {/* Import Data Button*/}
+        <button
+          onClick={() => navigate("/import-data")}
+          style={{
+            background: "rgba(255, 255, 255, 0.1)",
+            color: theme.accent,
+            padding: windowWidth <= 768 ? "0.5rem 0.8rem" : "0.7rem 1rem",
+            border: `1px solid rgba(255, 255, 255, 0.2)`,
+            borderRadius: "8px",
+            backdropFilter: "blur(20px)",
+            fontWeight: "600",
+            fontSize: windowWidth <= 768 ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            minHeight: "40px",
+            whiteSpace: "nowrap"
+          }}
+          onMouseOver={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          onMouseOut={e => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
+        >
+          {windowWidth <= 768 ? "" : "Import"}
         </button>
 
         {/* Settings Button */}
