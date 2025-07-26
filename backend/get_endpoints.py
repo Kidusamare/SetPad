@@ -11,11 +11,11 @@ def get_start_page():
     return {"SetPad Backend Running"}
 
 def get_tables(db: Session = Depends(get_db)) -> List[TableSchema]:
-    """Get all workout tables sorted by date (latest first)"""
-    tables = db.query(TableModelDB).all()
-    # Sort by date descending (latest first)
-    tables_sorted = sorted(tables, key=lambda t: t.date, reverse=True)
-    return [db_table_to_schema(t) for t in tables_sorted]
+    """Get all workout tables efficiently ordered by sort_order (latest first)"""
+    from sqlalchemy import desc
+    # Use database-level sorting with index for maximum efficiency
+    tables = db.query(TableModelDB).order_by(desc(TableModelDB.sort_order)).all()
+    return [db_table_to_schema(t) for t in tables]
 
 def get_table(table_id: str, db: Session = Depends(get_db)) -> TableSchema:
     """Get a specific workout table by ID"""

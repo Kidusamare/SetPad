@@ -19,10 +19,18 @@ def create_table(table: TableSchema, db: Session = Depends(get_db)) -> TableSche
     return db_table_to_schema(db_table)
 
 def update_table(table_id: str, updated_table: TableSchema, db: Session = Depends(get_db)) -> TableSchema:
-    """Update an existing workout table"""
+    """Update an existing workout table with efficient sort order management"""
+    from db import get_sort_order_for_date
+    
     db_table = db.query(TableModelDB).filter(TableModelDB.id == table_id).first()
     if not db_table:
         raise HTTPException(status_code=404, detail="Table not found")
+    
+    # Check if date changed - if so, recalculate sort_order
+    date_changed = db_table.date != updated_table.date
+    if date_changed:
+        new_sort_order = get_sort_order_for_date(updated_table.date, db)
+        db_table.sort_order = new_sort_order
     
     # Remove old rows/sets
     for row in db_table.rows:

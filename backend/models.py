@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Index
 from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
@@ -7,8 +7,13 @@ class Table(Base):
     __tablename__ = "tables"
     id = Column(String, primary_key=True, index=True)
     tableName = Column(String)
-    date = Column(String)
+    date = Column(String, index=True)  # Add index for efficient date queries
+    sort_order = Column(Integer, index=True)  # New field for maintaining sort order
     rows = relationship("Row", back_populates="table", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index('idx_date_sort_order', 'date', 'sort_order'),  # Composite index for efficient sorting
+    )
 
 class Row(Base):
     __tablename__ = "rows"
