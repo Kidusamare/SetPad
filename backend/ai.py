@@ -27,9 +27,27 @@ def save_uploaded_file_to_temp(upload_file: UploadFile) -> str:
         f.write(upload_file.file.read())
     return temp_path
 
-def clean_csv_with_openai(raw_text: str) -> list:
+def clean_csv_with_openai(raw_text: str, user_context: str = "") -> list:
     """Enhanced OpenAI processing for bulk workout data imports"""
-    prompt = f"""You are a fitness data processor. Convert this bulk workout data into a JSON array of workout sessions. 
+    # Build context section
+    context_section = ""
+    if user_context.strip():
+        context_section = f"""
+
+IMPORTANT USER CONTEXT:
+{user_context}
+
+Please use this context to better interpret the workout data below."""
+
+    prompt = f"""You are a fitness data processor. The following are multiple workouts written without format. Can you format them properly into a JSON array of workout sessions.
+
+WEIGHT NOTATION RULES:
+- "1p10" means 1 plate plus 10 which is 45+10 = 55 lbs
+- "2p5" means 2 plates plus 5 which is (45*2)+5 = 95 lbs  
+- All weights are in lbs unless specified otherwise
+- There will be undated, unnamed workouts and missing fields - please auto-fill those with reasonable defaults
+
+{context_section}
 
 Each workout session should be a separate table with this EXACT structure:
 
@@ -61,18 +79,21 @@ Each workout session should be a separate table with this EXACT structure:
 ]
 
 IMPORTANT RULES:
-1. Create separate workout sessions for different dates/times
-2. Group exercises by workout session, not individual exercises
-3. If dates aren't clear, use sequential dates starting from today
-4. Each session should have a unique ID and descriptive name
-5. Return ONLY the JSON array, no explanations or markdown
+1. Convert plate notation (1p10, 2p5, etc.) to actual weight in lbs
+2. Create separate workout sessions for different dates/times
+3. Group exercises by workout session, not individual exercises
+4. If dates aren't clear, use sequential dates starting from today
+5. Auto-fill missing workout names with descriptive names based on exercises
+6. Auto-fill missing muscle groups based on exercise names
+7. Each session should have a unique ID and descriptive name
+8. Return ONLY the JSON array, no explanations or markdown
 
 BULK WORKOUT DATA:
 {raw_text[:2500]}"""
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=4000,
             temperature=0.1,

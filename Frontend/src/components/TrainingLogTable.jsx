@@ -28,6 +28,8 @@ export default function TrainingLogTable() {
     const [templateName, setTemplateName] = useState('');
     const [templateDescription, setTemplateDescription] = useState('');
 
+    const isMobile = windowWidth <= 768;
+
     // Window resize detection
     useEffect(() => {
         const handleResize = () => {
@@ -234,21 +236,381 @@ export default function TrainingLogTable() {
         enabled: true
     });
 
-    if (!log) return <div style={{ background: theme.background, minHeight: "100vh" }}></div>;
+    if (!log) {
+        return (
+            <div style={{ 
+                background: 'var(--gradient-backdrop)', 
+                minHeight: "100vh",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <div style={{
+                    color: 'var(--primary-100)',
+                    fontSize: 'var(--font-size-lg)',
+                    fontFamily: 'var(--font-family-primary)'
+                }}>
+                    Loading...
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div 
-            data-form-container
-            style={{ 
-                padding: "2rem",
-                paddingTop: "5rem", // Add top padding to prevent overlap with back button
-                color: theme.text, 
-                background: theme.background, 
-                minHeight: "100vh",
-                position: "relative",
-                transition: "background-color 0.3s ease, color 0.3s ease"
-            }}>
+        <div className="training-log-container">
+            <style jsx>{`
+                .training-log-container {
+                    padding: ${isMobile ? 'var(--space-4)' : 'var(--space-8)'};
+                    padding-top: ${isMobile ? 'var(--space-16)' : 'var(--space-20)'};
+                    color: var(--primary-100);
+                    background: var(--gradient-backdrop);
+                    min-height: 100vh;
+                    position: relative;
+                    font-family: var(--font-family-primary);
+                }
+
+                .back-button {
+                    position: fixed;
+                    top: var(--space-4);
+                    left: var(--space-4);
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-3) var(--space-6);
+                    color: var(--primary-100);
+                    font-weight: 600;
+                    font-size: var(--font-size-sm);
+                    cursor: pointer;
+                    z-index: var(--z-fixed);
+                    transition: var(--transition-normal);
+                    opacity: ${showBackButton ? 1 : 0};
+                    transform: ${showBackButton ? 'translateY(0)' : 'translateY(-10px)'};
+                    pointer-events: ${showBackButton ? 'auto' : 'none'};
+                }
+
+                .back-button:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .header-section {
+                    margin-bottom: var(--space-8);
+                    text-align: center;
+                }
+
+                .workout-title {
+                    font-size: ${isMobile ? 'var(--font-size-2xl)' : 'var(--font-size-4xl)'};
+                    font-weight: 700;
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid var(--accent-primary);
+                    color: var(--accent-primary);
+                    margin-bottom: var(--space-4);
+                    width: 100%;
+                    max-width: 600px;
+                    padding: var(--space-2) 0;
+                    text-align: center;
+                    transition: var(--transition-normal);
+                    font-family: var(--font-family-primary);
+                }
+
+                .workout-title:focus {
+                    outline: none;
+                    border-bottom-color: var(--accent-secondary);
+                    box-shadow: 0 2px 0 var(--accent-secondary);
+                }
+
+                .date-input {
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    color: var(--primary-100);
+                    padding: var(--space-3) var(--space-4);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    font-weight: 600;
+                    font-size: var(--font-size-sm);
+                    cursor: pointer;
+                    transition: var(--transition-normal);
+                    font-family: var(--font-family-primary);
+                }
+
+                .date-input:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    border-color: var(--accent-primary);
+                }
+
+                .date-input:focus {
+                    outline: none;
+                    border-color: var(--accent-primary);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .divider {
+                    border: none;
+                    height: 1px;
+                    background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+                    margin: var(--space-8) 0;
+                }
+
+                .controls-section {
+                    margin-top: var(--space-8);
+                    padding: var(--space-6);
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-2xl);
+                    transition: var(--transition-normal);
+                }
+
+                .controls-section:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-color: var(--accent-primary);
+                }
+
+                .controls-title {
+                    margin-bottom: var(--space-4);
+                    color: var(--accent-primary);
+                    font-size: var(--font-size-xl);
+                    font-weight: 700;
+                    text-align: center;
+                    background: linear-gradient(45deg, var(--accent-primary), var(--accent-tertiary));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+
+                .button-grid {
+                    display: grid;
+                    grid-template-columns: ${isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))'};
+                    gap: var(--space-4);
+                    margin-bottom: var(--space-6);
+                }
+
+                .action-button {
+                    background: var(--gradient-primary);
+                    border: none;
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-4) var(--space-6);
+                    color: white;
+                    font-weight: 700;
+                    font-size: var(--font-size-sm);
+                    cursor: pointer;
+                    transition: var(--transition-normal);
+                    min-height: 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: var(--space-2);
+                    box-shadow: var(--shadow-md);
+                    font-family: var(--font-family-primary);
+                }
+
+                .action-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .secondary-button {
+                    background: var(--glass-bg);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-4) var(--space-6);
+                    color: var(--primary-100);
+                    font-weight: 600;
+                    font-size: var(--font-size-sm);
+                    cursor: pointer;
+                    transition: var(--transition-normal);
+                    min-height: 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: var(--space-2);
+                    font-family: var(--font-family-primary);
+                }
+
+                .secondary-button:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    border-color: var(--accent-primary);
+                    transform: translateY(-1px);
+                }
+
+                .danger-button {
+                    background: rgba(255, 68, 102, 0.1);
+                    border: 1px solid rgba(255, 68, 102, 0.3);
+                    color: var(--accent-error);
+                }
+
+                .danger-button:hover:not(:disabled) {
+                    background: rgba(255, 68, 102, 0.2);
+                    border-color: var(--accent-error);
+                    color: white;
+                }
+
+                .danger-button:disabled {
+                    background: var(--primary-700);
+                    border-color: var(--primary-600);
+                    color: var(--primary-400);
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .save-button {
+                    background: var(--accent-success);
+                    color: white;
+                    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+                }
+
+                .save-button:hover {
+                    box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+                }
+
+                .bottom-actions {
+                    display: flex;
+                    gap: var(--space-4);
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .save-status {
+                    margin-top: var(--space-3);
+                    text-align: center;
+                    font-size: var(--font-size-xs);
+                    color: var(--primary-300);
+                    transition: var(--transition-normal);
+                }
+
+                .save-status.error {
+                    color: var(--accent-error);
+                }
+
+                .save-status.success {
+                    color: var(--accent-success);
+                }
+
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(10, 11, 15, 0.8);
+                    backdrop-filter: blur(8px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: var(--z-modal-backdrop);
+                    padding: var(--space-4);
+                }
+
+                .modal {
+                    background: var(--primary-800);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-2xl);
+                    padding: var(--space-8);
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: var(--shadow-xl);
+                    transform: scale(0.9);
+                    animation: modalAppear 0.3s ease forwards;
+                }
+
+                @keyframes modalAppear {
+                    to {
+                        transform: scale(1);
+                    }
+                }
+
+                .modal-title {
+                    font-size: var(--font-size-xl);
+                    font-weight: 700;
+                    color: var(--primary-100);
+                    margin-bottom: var(--space-6);
+                    text-align: center;
+                }
+
+                .modal-input {
+                    width: 100%;
+                    background: var(--glass-bg);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-4);
+                    color: var(--primary-100);
+                    font-size: var(--font-size-sm);
+                    margin-bottom: var(--space-4);
+                    transition: var(--transition-normal);
+                    font-family: var(--font-family-primary);
+                }
+
+                .modal-input:focus {
+                    outline: none;
+                    border-color: var(--accent-primary);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .modal-textarea {
+                    width: 100%;
+                    background: var(--glass-bg);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-4);
+                    color: var(--primary-100);
+                    font-size: var(--font-size-sm);
+                    margin-bottom: var(--space-6);
+                    resize: vertical;
+                    min-height: 80px;
+                    transition: var(--transition-normal);
+                    font-family: var(--font-family-primary);
+                }
+
+                .modal-textarea:focus {
+                    outline: none;
+                    border-color: var(--accent-primary);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .modal-actions {
+                    display: flex;
+                    gap: var(--space-4);
+                    justify-content: flex-end;
+                }
+
+                .modal-button {
+                    padding: var(--space-3) var(--space-6);
+                    border-radius: var(--radius-lg);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition-fast);
+                    border: none;
+                    font-size: var(--font-size-sm);
+                    font-family: var(--font-family-primary);
+                }
+
+                .modal-button-cancel {
+                    background: var(--glass-bg);
+                    color: var(--primary-200);
+                    border: 1px solid var(--glass-border);
+                }
+
+                .modal-button-cancel:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    color: var(--primary-100);
+                }
+
+                .modal-button-save {
+                    background: var(--gradient-primary);
+                    color: white;
+                }
+
+                .modal-button-save:hover {
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow-glow);
+                }
+            `}</style>
+
             <button
+                className="back-button"
                 onClick={() => {
                     console.log(`Navigating back from table ${id} to /log`);
                     try {
@@ -265,79 +627,28 @@ export default function TrainingLogTable() {
                         window.location.href = '/log';
                     }
                 }}
-                style={{
-                    position: "fixed",
-                    top: "1rem",
-                    left: "1rem",
-                    background: theme.accentSecondary,
-                    color: theme.accent,
-                    padding: "0.7rem 1.4rem",
-                    border: "none",
-                    borderRadius: "10px",
-                    fontWeight: "600",
-                    fontSize: "1rem",
-                    cursor: "pointer",
-                    zIndex: 1000,
-                    transition: "all 0.3s ease",
-                    opacity: showBackButton ? 1 : 0,
-                    transform: showBackButton ? "translateY(0)" : "translateY(-10px)",
-                    pointerEvents: showBackButton ? "auto" : "none"
-                }}
-                onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-                onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
             >
                 ← Back to Saved Logs
             </button>
 
-            <div style={{ marginBottom: "2rem" }}>
+            <div className="header-section">
                 <input
                     type="text"
                     value={log.tableName}
                     onChange={handleRename}
-                    style={{
-                        fontSize: "2rem",
-                        fontWeight: "bold",
-                        background: "transparent",
-                        border: "none",
-                        borderBottom: `2px solid ${theme.accent}`,
-                        color: theme.accent,
-                        marginBottom: "1rem",
-                        width: "100%",
-                        padding: "0.5rem 0",
-                        transition: "border-color 0.3s ease, color 0.3s ease"
-                    }}
+                    className="workout-title"
+                    placeholder="Workout Name"
                 />
 
                 <input
                     type="date"
                     value={log.date}
                     onChange={(e) => setLog(prevLog => ({ ...prevLog, date: e.target.value }))}
-                    style={{
-                        background: theme.surfaceSecondary,
-                        color: theme.text,
-                        padding: "0.7rem 1.4rem",
-                        border: "none",
-                        borderRadius: "10px",
-                        fontWeight: "600",
-                        fontSize: "1rem",
-                        cursor: "pointer",
-                        marginRight: 0,
-                        marginTop: 0,
-                        marginBottom: "1rem",
-                        transition: "background 0.2s ease"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = theme.surfaceTertiary}
-                    onMouseOut={e => e.currentTarget.style.background = theme.surfaceSecondary}
+                    className="date-input"
                 />
             </div>
 
-            <hr style={{ 
-                border: "none", 
-                height: "1px", 
-                background: theme.border, 
-                margin: "2rem 0",
-                transition: "background-color 0.3s ease"
-            }} />
+            <hr className="divider" />
 
             {log.rows.map((row, index) => (
                 <TrainingLogRow
@@ -351,167 +662,50 @@ export default function TrainingLogTable() {
                 />
             ))}
 
-            <div style={{ 
-                marginTop: "2rem",
-                padding: "1.5rem",
-                background: theme.cardBackground,
-                borderRadius: "12px",
-                border: `1px solid ${theme.cardBorder}`,
-                transition: "background-color 0.3s ease, border-color 0.3s ease"
-            }}>
-                <h3 style={{ 
-                    marginBottom: "1rem", 
-                    color: theme.accent,
-                    fontSize: "1.2rem",
-                    transition: "color 0.3s ease"
-                }}>
-                    Exercise Management
-                </h3>
+            <div className="controls-section">
+                <h3 className="controls-title">Workout Controls</h3>
                 
-                <div style={{
-                    display: 'flex',
-                    gap: '1rem',
-                    flexWrap: 'wrap',
-                    marginBottom: '1rem'
-                }}>
+                <div className="button-grid">
+                    <button className="action-button" onClick={addRow}>
+                        ➕ Add Exercise
+                    </button>
+                    
+                    <button className="secondary-button" onClick={() => setShowTemplates(true)}>
+                        📋 Use Template
+                    </button>
+                    
+                    <button className="secondary-button" onClick={() => setShowSaveTemplate(true)}>
+                        💾 Save as Template
+                    </button>
+                </div>
+
+                <div className="bottom-actions">
                     <button
-                        onClick={addRow}
-                        style={{
-                            background: theme.accentSecondary,
-                            color: theme.accent,
-                            padding: "0.7rem 1.4rem",
-                            border: "none",
-                            borderRadius: "10px",
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            fontSize: "1rem",
-                            minHeight: '44px',
-                        transition: "background 0.2s ease"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-                    onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
-                >
-                    + Add Exercise
-                </button>
-                
-                <button
-                    onClick={() => setShowTemplates(true)}
-                    style={{
-                        background: theme.surfaceSecondary,
-                        color: theme.accent,
-                        padding: "0.7rem 1.4rem",
-                        border: `1px solid ${theme.accent}`,
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        minHeight: '44px',
-                        transition: "all 0.2s ease"
-                    }}
-                    onMouseOver={e => {
-                        e.currentTarget.style.background = theme.accent;
-                        e.currentTarget.style.color = theme.background;
-                    }}
-                    onMouseOut={e => {
-                        e.currentTarget.style.background = theme.surfaceSecondary;
-                        e.currentTarget.style.color = theme.accent;
-                    }}
-                >
-                    Use Template
-                </button>
-                
-                <button
-                    onClick={() => setShowSaveTemplate(true)}
-                    style={{
-                        background: theme.surfaceSecondary,
-                        color: theme.accent,
-                        padding: "0.7rem 1.4rem",
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        minHeight: '44px',
-                        transition: "all 0.2s ease"
-                    }}
-                    onMouseOver={e => {
-                        e.currentTarget.style.background = theme.surfaceTertiary;
-                        e.currentTarget.style.borderColor = theme.accent;
-                    }}
-                    onMouseOut={e => {
-                        e.currentTarget.style.background = theme.surfaceSecondary;
-                        e.currentTarget.style.borderColor = theme.border;
-                    }}
-                >
-                    💾 Save as Template
-                </button>
-            </div>
-                <button
-                    onClick={deleteLastRow}
-                    disabled={log.rows.length <= 1}
-                    style={{
-                        background: log.rows.length <= 1 ? theme.textMuted : theme.surfaceSecondary,
-                        color: log.rows.length <= 1 ? theme.textSecondary : theme.textSecondary,
-                        padding: "0.7rem 1.4rem",
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: "10px",
-                        cursor: log.rows.length <= 1 ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        marginRight: "1rem",
-                        marginTop: "1rem",
-                        transition: "background 0.2s ease, border-color 0.2s ease"
-                    }}
-                    onMouseOver={e => {
-                        if (log.rows.length > 1) {
-                            e.currentTarget.style.background = theme.surfaceTertiary;
-                            e.currentTarget.style.borderColor = theme.textMuted;
-                        }
-                    }}
-                    onMouseOut={e => {
-                        if (log.rows.length > 1) {
-                            e.currentTarget.style.background = theme.surfaceSecondary;
-                            e.currentTarget.style.borderColor = theme.border;
-                        }
-                    }}
-                >
-                    - Delete Last
-                </button>
-                <button
-                    onClick={() => {
-                        manualSave();
-                        setSaveStatus('Manually saved');
-                        setTimeout(() => setSaveStatus(''), 2000);
-                    }}
-                    style={{
-                        background: theme.accent,
-                        color: theme.background,
-                        padding: "0.7rem 1.4rem",
-                        border: "none",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        marginTop: "1rem",
-                        transition: "background 0.2s ease"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-                    onMouseOut={e => e.currentTarget.style.background = theme.accent}
-                >
-                    {saveStatus === 'Saving...' ? 'Saving...' : 
-                     saveStatus === 'Saved' ? 'Saved ✓' : 
-                     saveStatus === 'Save failed' ? 'Save Failed ✗' : 
-                     'Save Workout (Ctrl+S)'}
-                </button>
+                        className="secondary-button danger-button"
+                        onClick={deleteLastRow}
+                        disabled={log.rows.length <= 1}
+                    >
+                        🗑 Delete Last
+                    </button>
+                    
+                    <button
+                        className="action-button save-button"
+                        onClick={() => {
+                            manualSave();
+                            setSaveStatus('Manually saved');
+                            setTimeout(() => setSaveStatus(''), 2000);
+                        }}
+                    >
+                        {saveStatus === 'Saving...' ? '⏳ Saving...' : 
+                         saveStatus === 'Saved' ? '✅ Saved' : 
+                         saveStatus === 'Save failed' ? '❌ Save Failed' : 
+                         '💾 Save Workout (Ctrl+S)'}
+                    </button>
+                </div>
                 
                 {/* Save Status Indicator */}
                 {(saveStatus || lastSaveTime) && (
-                    <div style={{
-                        marginTop: '0.5rem',
-                        fontSize: '0.8rem',
-                        color: saveStatus === 'Save failed' ? theme.danger : theme.textSecondary,
-                        textAlign: 'center'
-                    }}>
+                    <div className={`save-status ${saveStatus === 'Save failed' ? 'error' : saveStatus ? 'success' : ''}`}>
                         {saveStatus || (lastSaveTime && `Last saved: ${lastSaveTime.toLocaleTimeString()}`)}
                     </div>
                 )}
@@ -528,154 +722,42 @@ export default function TrainingLogTable() {
 
             {/* Save as Template Modal */}
             {showSaveTemplate && (
-                <div style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "rgba(0, 0, 0, 0.8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 2000,
-                    padding: "1rem"
-                }}
-                onClick={() => setShowSaveTemplate(false)}
-                >
-                    <div style={{
-                        background: theme.cardBackground,
-                        borderRadius: "20px",
-                        padding: "2rem",
-                        maxWidth: "90vw",
-                        width: "500px",
-                        border: `1px solid ${theme.cardBorder}`,
-                        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    >
-                        <h3 style={{
-                            margin: "0 0 1.5rem 0",
-                            color: theme.accent,
-                            fontSize: "1.5rem",
-                            textAlign: "center"
-                        }}>
-                            Save as Template
-                        </h3>
+                <div className="modal-overlay" onClick={() => setShowSaveTemplate(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="modal-title">Save as Template</h3>
                         
-                        <div style={{ marginBottom: "1rem" }}>
-                            <label style={{
-                                display: "block",
-                                marginBottom: "0.5rem",
-                                color: theme.text,
-                                fontWeight: "600"
-                            }}>
-                                Template Name *
-                            </label>
-                            <input
-                                type="text"
-                                value={templateName}
-                                onChange={(e) => setTemplateName(e.target.value)}
-                                placeholder="e.g., My Upper Body Workout"
-                                style={{
-                                    width: "100%",
-                                    padding: "0.75rem",
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "8px",
-                                    background: theme.surfaceSecondary,
-                                    color: theme.text,
-                                    fontSize: "1rem",
-                                    boxSizing: "border-box"
-                                }}
-                                autoFocus
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: "2rem" }}>
-                            <label style={{
-                                display: "block",
-                                marginBottom: "0.5rem",
-                                color: theme.text,
-                                fontWeight: "600"
-                            }}>
-                                Description (optional)
-                            </label>
-                            <textarea
-                                value={templateDescription}
-                                onChange={(e) => setTemplateDescription(e.target.value)}
-                                placeholder="Brief description of this workout template..."
-                                rows={3}
-                                style={{
-                                    width: "100%",
-                                    padding: "0.75rem",
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "8px",
-                                    background: theme.surfaceSecondary,
-                                    color: theme.text,
-                                    fontSize: "1rem",
-                                    boxSizing: "border-box",
-                                    resize: "vertical"
-                                }}
-                            />
-                        </div>
-
-                        <div style={{
-                            display: "flex",
-                            gap: "1rem",
-                            justifyContent: "flex-end"
-                        }}>
+                        <input
+                            type="text"
+                            placeholder="Template name"
+                            value={templateName}
+                            onChange={(e) => setTemplateName(e.target.value)}
+                            className="modal-input"
+                            autoFocus
+                        />
+                        
+                        <textarea
+                            placeholder="Description (optional)"
+                            value={templateDescription}
+                            onChange={(e) => setTemplateDescription(e.target.value)}
+                            className="modal-textarea"
+                        />
+                        
+                        <div className="modal-actions">
                             <button
-                                onClick={() => setShowSaveTemplate(false)}
-                                style={{
-                                    background: theme.surfaceSecondary,
-                                    color: theme.textSecondary,
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "8px",
-                                    padding: "0.8rem 1.5rem",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    fontSize: "1rem",
-                                    minHeight: "44px",
-                                    transition: "all 0.2s ease"
-                                }}
-                                onMouseOver={e => {
-                                    e.currentTarget.style.background = theme.surfaceTertiary;
-                                    e.currentTarget.style.borderColor = theme.textMuted;
-                                }}
-                                onMouseOut={e => {
-                                    e.currentTarget.style.background = theme.surfaceSecondary;
-                                    e.currentTarget.style.borderColor = theme.border;
+                                className="modal-button modal-button-cancel"
+                                onClick={() => {
+                                    setShowSaveTemplate(false);
+                                    setTemplateName('');
+                                    setTemplateDescription('');
                                 }}
                             >
                                 Cancel
                             </button>
                             <button
+                                className="modal-button modal-button-save"
                                 onClick={handleSaveAsTemplate}
-                                disabled={!templateName.trim()}
-                                style={{
-                                    background: templateName.trim() ? theme.accent : theme.textMuted,
-                                    color: templateName.trim() ? theme.background : theme.textSecondary,
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    padding: "0.8rem 1.5rem",
-                                    cursor: templateName.trim() ? "pointer" : "not-allowed",
-                                    fontWeight: "600",
-                                    fontSize: "1rem",
-                                    minHeight: "44px",
-                                    transition: "all 0.2s ease"
-                                }}
-                                onMouseOver={e => {
-                                    if (templateName.trim()) {
-                                        e.currentTarget.style.background = theme.accentHover;
-                                    }
-                                }}
-                                onMouseOut={e => {
-                                    if (templateName.trim()) {
-                                        e.currentTarget.style.background = theme.accent;
-                                    }
-                                }}
                             >
-                                💾 Save Template
+                                Save Template
                             </button>
                         </div>
                     </div>

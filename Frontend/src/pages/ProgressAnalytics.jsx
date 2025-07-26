@@ -18,7 +18,7 @@ const ProgressAnalytics = () => {
 
     useEffect(() => {
         loadProgressData();
-    }, [timeRange]);
+    }, [timeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadProgressData = async () => {
         setIsLoading(true);
@@ -136,11 +136,11 @@ const ProgressAnalytics = () => {
     if (isLoading) {
         return (
             <div style={{
-                padding: '2rem',
-                paddingTop: '5rem',
-                background: theme.background,
+                padding: 'var(--space-8)',
+                paddingTop: 'var(--space-20)',
+                background: 'var(--gradient-backdrop)',
                 minHeight: '100vh',
-                color: theme.text
+                color: 'var(--primary-100)'
             }}>
                 <div style={{
                     display: 'flex',
@@ -149,8 +149,8 @@ const ProgressAnalytics = () => {
                     height: '50vh'
                 }}>
                     <div style={{
-                        color: theme.textSecondary,
-                        fontSize: '1.2rem'
+                        color: 'var(--primary-400)',
+                        fontSize: 'var(--font-size-xl)'
                     }}>
                         Loading progress data...
                     </div>
@@ -161,50 +161,52 @@ const ProgressAnalytics = () => {
 
     return (
         <div style={{
-            padding: '2rem',
-            paddingTop: '5rem',
-            background: theme.background,
+            padding: 'var(--space-8)',
+            paddingTop: 'var(--space-20)',
+            background: 'var(--gradient-backdrop)',
             minHeight: '100vh',
-            color: theme.text
+            color: 'var(--primary-100)'
         }}>
             {/* Header */}
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '2rem',
+                marginBottom: 'var(--space-8)',
                 flexWrap: 'wrap',
-                gap: '1rem'
+                gap: 'var(--space-4)'
             }}>
                 <div>
                     <button
                         onClick={() => navigate('/')}
                         style={{
-                            background: theme.accentSecondary,
-                            color: theme.accent,
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '0.5rem 1rem',
-                            fontSize: '0.9rem',
+                            background: 'rgba(0, 212, 255, 0.1)',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--accent-primary)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-2) var(--space-4)',
+                            fontSize: 'var(--font-size-sm)',
                             cursor: 'pointer',
-                            marginBottom: '1rem',
-                            minHeight: '44px'
+                            marginBottom: 'var(--space-4)',
+                            minHeight: '44px',
+                            transition: 'all var(--transition-normal)'
                         }}
                     >
                         ← Back to Dashboard
                     </button>
                     <h1 style={{
                         margin: 0,
-                        color: theme.accent,
-                        fontSize: '2rem',
-                        fontWeight: '700'
+                        color: 'var(--accent-primary)',
+                        fontSize: 'var(--font-size-3xl)',
+                        fontWeight: '700',
+                        letterSpacing: '-0.02em'
                     }}>
                         Progress Analytics
                     </h1>
                     <p style={{
-                        margin: '0.5rem 0 0 0',
-                        color: theme.textSecondary,
-                        fontSize: '1rem'
+                        margin: 'var(--space-2) 0 0 0',
+                        color: 'var(--primary-400)',
+                        fontSize: 'var(--font-size-base)'
                     }}>
                         Track your strength and performance improvements
                     </p>

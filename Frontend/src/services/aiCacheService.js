@@ -172,8 +172,15 @@ export class AIService {
     }
 
     // AI Coaching chat with rate limiting
-    static async sendChatMessage(message, forceRefresh = false) {
-        return this.fetchWithCache('/ai-coaching', { message }, { 
+    static async sendChatMessage(request, forceRefresh = false) {
+        // Ensure request matches backend AICoachingRequest schema
+        const requestBody = {
+            message: request.message || request,
+            conversation_history: request.conversation_history || [],
+            user_data: request.user_data || null
+        };
+        
+        return this.fetchWithCache('/ai-coaching', requestBody, { 
             forceRefresh,
             method: 'POST' 
         });

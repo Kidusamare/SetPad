@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends, UploadFile, File
+from fastapi import HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
 from schemas import TableSchema, AICoachingRequest, AICoachingResponse
@@ -29,8 +29,14 @@ def update_table(table_id: str, updated_table: TableSchema, db: Session = Depend
     # Check if date changed - if so, recalculate sort_order
     date_changed = db_table.date != updated_table.date
     if date_changed:
-        new_sort_order = get_sort_order_for_date(updated_table.date, db)
-        db_table.sort_order = new_sort_order
+        try:
+            new_sort_order = get_sort_order_for_date(updated_table.date, db)
+            db_table.sort_order = new_sort_order
+        except Exception as e:
+            print(f"Error calculating sort_order on update, keeping existing: {e}")
+            # Keep existing sort_order or set default if None
+            if not hasattr(db_table, 'sort_order') or db_table.sort_order is None:
+                db_table.sort_order = 1000
     
     # Remove old rows/sets
     for row in db_table.rows:
@@ -54,8 +60,8 @@ def update_table(table_id: str, updated_table: TableSchema, db: Session = Depend
     db.refresh(db_table)
     return db_table_to_schema(db_table)
 
-def import_data(file: UploadFile = File(...)):
-    """Import workout data from file using AI processing"""
+def import_data(file: UploadFile = File(...), context: str = Form("")):
+    """Import workout data from file using AI processing with optional user context"""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
     
@@ -65,8 +71,8 @@ def import_data(file: UploadFile = File(...)):
         if not content.strip():
             raise HTTPException(status_code=400, detail="File is empty")
         
-        # Process with OpenAI to extract bulk workout data
-        workout_list = clean_csv_with_openai(content)
+        # Process with OpenAI to extract bulk workout data, including user context
+        workout_list = clean_csv_with_openai(content, context)
         
         # Save to database
         db = SessionLocal()

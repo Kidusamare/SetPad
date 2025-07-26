@@ -13,9 +13,17 @@ def get_start_page():
 def get_tables(db: Session = Depends(get_db)) -> List[TableSchema]:
     """Get all workout tables efficiently ordered by sort_order (latest first)"""
     from sqlalchemy import desc
-    # Use database-level sorting with index for maximum efficiency
-    tables = db.query(TableModelDB).order_by(desc(TableModelDB.sort_order)).all()
-    return [db_table_to_schema(t) for t in tables]
+    
+    try:
+        # Use database-level sorting with index for maximum efficiency
+        tables = db.query(TableModelDB).order_by(desc(TableModelDB.sort_order)).all()
+        return [db_table_to_schema(t) for t in tables]
+    except Exception as e:
+        # Fallback to date sorting if sort_order column doesn't exist yet
+        print(f"Falling back to date sorting: {e}")
+        tables = db.query(TableModelDB).all()
+        tables_sorted = sorted(tables, key=lambda t: t.date, reverse=True)
+        return [db_table_to_schema(t) for t in tables_sorted]
 
 def get_table(table_id: str, db: Session = Depends(get_db)) -> TableSchema:
     """Get a specific workout table by ID"""

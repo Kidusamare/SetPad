@@ -1,0 +1,131 @@
+/* App Layout - Premium Futuristic Design */
+.app-layout {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scroll Progress Bar */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-900);
+  z-index: var(--z-fixed);
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: var(--gradient-primary);
+  transition: width var(--transition-fast);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Main Content Area */
+.main-content {
+  margin-left: 80px; /* Collapsed nav width */
+  min-height: 100vh;
+  transition: margin-left var(--transition-normal);
+  position: relative;
+  z-index: var(--z-normal);
+}
+
+.main-content.nav-expanded {
+  margin-left: 280px; /* Expanded nav width */
+}
+
+.content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  position: relative;
+}
+
+/* Background Effects */
+.bg-effects {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: var(--z-behind);
+  overflow: hidden;
+}
+
+.bg-gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-primary), transparent 70%);
+  opacity: 0.03;
+  animation: float 20s ease-in-out infinite;
+}
+
+.bg-gradient-orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -300px;
+  right: -300px;
+  animation-delay: 0s;
+}
+
+.bg-gradient-orb-2 {
+  width: 800px;
+  height: 800px;
+  bottom: -400px;
+  left: -400px;
+  animation-delay: -7s;
+  background: radial-gradient(circle, var(--accent-tertiary), transparent 70%);
+}
+
+.bg-gradient-orb-3 {
+  width: 400px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -14s;
+  background: radial-gradient(circle, var(--accent-success), transparent 70%);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .main-content.nav-expanded {
+    margin-left: 0;
+  }
+
+  .content-container {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  .content-container {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .bg-gradient-orb {
+    display: none; /* Hide for performance on mobile */
+  }
+}
+
+/* Animation Optimizations */
+@media (prefers-reduced-motion: reduce) {
+  .bg-gradient-orb {
+    animation: none;
+  }
+  
+  .main-content {
+    transition: none;
+  }
+  
+  .scroll-progress-bar {
+    transition: none;
+  }
+}

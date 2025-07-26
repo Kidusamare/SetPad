@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, desc
+from sqlalchemy import create_engine, desc, text
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base, Table as TableModelDB, Row as RowModelDB, Set as SetModelDB
 from schemas import TableSchema, RowSchema, SetSchema
@@ -14,40 +14,48 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(bind=engine)
 
-def migrate_existing_data_with_sort_order():
-    """Migrate existing tables to add sort_order field for efficient sorting"""
+def check_and_add_sort_order_column():
+    """Check if sort_order column exists, if not add it and migrate data"""
     db = SessionLocal()
     try:
-        # Check if migration is needed
-        tables_without_sort_order = db.query(TableModelDB).filter(
-            TableModelDB.sort_order.is_(None)
-        ).all()
-        
-        if not tables_without_sort_order:
-            return  # Already migrated
-        
-        print(f"Migrating {len(tables_without_sort_order)} tables with sort_order...")
-        
-        # Sort tables by date for proper ordering
-        sorted_tables = sorted(tables_without_sort_order, 
-                             key=lambda t: datetime.strptime(t.date, "%Y-%m-%d") if t.date else datetime.min, 
-                             reverse=True)
-        
-        # Assign sort_order values with gaps for future insertions
-        for i, table in enumerate(sorted_tables):
-            table.sort_order = (len(sorted_tables) - i) * 1000
-        
+        # Try to query the sort_order column to see if it exists
+        try:
+            db.execute(text("SELECT sort_order FROM tables LIMIT 1"))
+            print("sort_order column already exists")
+            return
+        except Exception:
+            print("sort_order column doesn't exist, adding it...")
+            
+        # Add the sort_order column
+        db.execute(text("ALTER TABLE tables ADD COLUMN sort_order INTEGER"))
         db.commit()
-        print("Migration completed successfully!")
+        print("Added sort_order column successfully")
+        
+        # Now migrate existing data
+        tables = db.query(TableModelDB).all()
+        if tables:
+            print(f"Migrating {len(tables)} existing tables with sort_order...")
+            
+            # Sort tables by date for proper ordering
+            sorted_tables = sorted(tables, 
+                                 key=lambda t: datetime.strptime(t.date, "%Y-%m-%d") if t.date else datetime.min, 
+                                 reverse=True)
+            
+            # Assign sort_order values with gaps for future insertions
+            for i, table in enumerate(sorted_tables):
+                table.sort_order = (len(sorted_tables) - i) * 1000
+            
+            db.commit()
+            print("Migration completed successfully!")
         
     except Exception as e:
-        print(f"Migration failed: {e}")
+        print(f"Migration error: {e}")
         db.rollback()
     finally:
         db.close()
 
 # Run migration on startup
-migrate_existing_data_with_sort_order()
+check_and_add_sort_order_column()
 
 def get_db():
     """Database dependency for FastAPI endpoints"""
@@ -64,11 +72,19 @@ def get_sort_order_for_date(date_str: str, db: Session) -> int:
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         # If date format is invalid, put it at the end
-        max_order = db.query(TableModelDB.sort_order).order_by(desc(TableModelDB.sort_order)).first()
-        return (max_order[0] + 1) if max_order and max_order[0] is not None else 1
+        try:
+            max_order = db.query(TableModelDB.sort_order).order_by(desc(TableModelDB.sort_order)).first()
+            return (max_order[0] + 1) if max_order and max_order[0] is not None else 1
+        except Exception:
+            # If sort_order column doesn't exist yet, return default
+            return 1000
     
     # Get all tables ordered by date and sort_order
-    existing_tables = db.query(TableModelDB).order_by(desc(TableModelDB.date), desc(TableModelDB.sort_order)).all()
+    try:
+        existing_tables = db.query(TableModelDB).order_by(desc(TableModelDB.date), desc(TableModelDB.sort_order)).all()
+    except Exception:
+        # If sort_order column doesn't exist yet, just use date ordering
+        existing_tables = db.query(TableModelDB).order_by(desc(TableModelDB.date)).all()
     
     if not existing_tables:
         return 1  # First table
@@ -143,7 +159,11 @@ def db_table_to_schema(table: TableModelDB) -> TableSchema:
 def create_db_table_from_schema(schema: TableSchema, db: Session):
     """Create a new database table from TableSchema with automatic sort order"""
     # Calculate sort order for efficient retrieval
-    sort_order = get_sort_order_for_date(schema.date, db)
+    try:
+        sort_order = get_sort_order_for_date(schema.date, db)
+    except Exception as e:
+        print(f"Error calculating sort_order, using default: {e}")
+        sort_order = 1000
     
     db_table = TableModelDB(
         id=schema.id,
@@ -181,7 +201,11 @@ def insert_table_schema_to_db(table_schema: dict, db: Session):
         return  # Skip or update as needed
     
     # Calculate sort order for efficient retrieval
-    sort_order = get_sort_order_for_date(validated.date, db)
+    try:
+        sort_order = get_sort_order_for_date(validated.date, db)
+    except Exception as e:
+        print(f"Error calculating sort_order, using default: {e}")
+        sort_order = 1000
     
     db_table = TableModelDB(
         id=validated.id,

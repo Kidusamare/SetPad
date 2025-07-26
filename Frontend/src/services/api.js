@@ -35,7 +35,8 @@ export async function updateTable(id, data) {
 
 export async function deleteTable(id) {
   const res = await fetch(`${API_BASE}/tables/${id}`, {
-    method: 'DELETE' });
+    method: 'DELETE'
+  });
   if (!res.ok) throw new Error('Failed to delete table');
   return res.json();
 }

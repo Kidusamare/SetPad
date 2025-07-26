@@ -4,7 +4,6 @@ import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
 import { SkeletonLoader } from "./LoadingSpinner";
 import { DataExportService } from "../services/dataExport";
-import SearchComponent from "./SearchComponent";
 
 const manager = new TrainingLogManager();
 
@@ -13,12 +12,8 @@ export default function SavedTablesPage({ previewMode = false }) {
     const { theme } = useTheme();
     const [tables, setTables] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isHoveringNewLog, setIsHoveringNewLog] = useState(false);
-    const [showBackButton, setShowBackButton] = useState(true);
-    const [lastScrollY, setLastScrollY] = useState(0);
-    const [deletePopup, setDeletePopup] = useState({ show: false, tableId: null, tableName: "" });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, tableId: null, tableName: "" });
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [showSearch, setShowSearch] = useState(false);
 
     useEffect(() => {
         const fetchTables = async () => {
@@ -35,32 +30,13 @@ export default function SavedTablesPage({ previewMode = false }) {
         fetchTables();
     }, []);
 
-    // Window resize detection
     useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        };
-
+        const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Scroll detection for back button
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            
-            // Show button if at top of page or scrolling up
-            const isAtTop = currentScrollY < 50;
-            const isScrollingUp = currentScrollY < lastScrollY;
-            
-            setShowBackButton(isAtTop || isScrollingUp);
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
+    const isMobile = windowWidth <= 768;
 
     const handleNewTable = async () => {
         const newTable = manager.createNewTable();
@@ -68,73 +44,28 @@ export default function SavedTablesPage({ previewMode = false }) {
         navigate(`/log/${newTable.id}`);
     };
 
-    const handleOpenTable = (id) => {
-        navigate(`/log/${id}`);
+    const openDeleteModal = (id, tableName) => {
+        setDeleteModal({ isOpen: true, tableId: id, tableName });
     };
 
-    const handleDeleteTable = async (id, tableName) => {
-        setDeletePopup({ show: true, tableId: id, tableName: tableName });
+    const closeDeleteModal = () => {
+        setDeleteModal({ isOpen: false, tableId: null, tableName: "" });
     };
 
     const confirmDelete = async () => {
-        if (deletePopup.tableId) {
-            await manager.deleteTable(deletePopup.tableId);
-            setTables((prev) => prev.filter((table) => table.id !== deletePopup.tableId));
-            setDeletePopup({ show: false, tableId: null, tableName: "" });
-        }
-    };
-
-    const cancelDelete = () => {
-        setDeletePopup({ show: false, tableId: null, tableName: "" });
-    };
-
-    const handleExportAllWorkouts = async () => {
+        if (!deleteModal.tableId) return;
+        
         try {
-            if (tables.length === 0) return;
-            
-            // Load full workout data for all tables
-            const fullWorkouts = await Promise.all(
-                tables.map(async (table) => {
-                    const fullTable = await manager.loadTable(table.id);
-                    return {
-                        ...fullTable,
-                        date: table.date,
-                        tableName: table.tableName
-                    };
-                })
-            );
-            
-            await DataExportService.exportAllWorkoutsToCSV(fullWorkouts, 'all_workouts');
+            await manager.deleteTable(deleteModal.tableId);
+            setTables(prev => prev.filter(table => table.id !== deleteModal.tableId));
+            closeDeleteModal();
         } catch (error) {
-            console.error('Error exporting workouts:', error);
-            alert('Failed to export workouts. Please try again.');
+            console.error('Error deleting table:', error);
+            alert('Failed to delete workout. Please try again.');
         }
     };
 
-    const handleExportToPDF = async () => {
-        try {
-            if (tables.length === 0) return;
-            
-            // Load full workout data for all tables
-            const fullWorkouts = await Promise.all(
-                tables.map(async (table) => {
-                    const fullTable = await manager.loadTable(table.id);
-                    return {
-                        ...fullTable,
-                        date: table.date,
-                        tableName: table.tableName
-                    };
-                })
-            );
-            
-            await DataExportService.exportToPDF(fullWorkouts, 'workout_report');
-        } catch (error) {
-            console.error('Error exporting to PDF:', error);
-            alert('Failed to export to PDF. Please try again.');
-        }
-    };
-
-    const handleExportSingleWorkout = async (tableId, tableName) => {
+    const handleExportSingle = async (tableId, tableName) => {
         try {
             const fullTable = await manager.loadTable(tableId);
             const table = tables.find(t => t.id === tableId);
@@ -143,7 +74,6 @@ export default function SavedTablesPage({ previewMode = false }) {
                 date: table.date,
                 tableName: table.tableName
             };
-            
             await DataExportService.exportWorkoutToCSV(workoutData);
         } catch (error) {
             console.error('Error exporting workout:', error);
@@ -151,7 +81,48 @@ export default function SavedTablesPage({ previewMode = false }) {
         }
     };
 
-    // Format date for display
+    const handleExportAll = async () => {
+        if (tables.length === 0) return;
+        
+        try {
+            const fullWorkouts = await Promise.all(
+                tables.map(async (table) => {
+                    const fullTable = await manager.loadTable(table.id);
+                    return {
+                        ...fullTable,
+                        date: table.date,
+                        tableName: table.tableName
+                    };
+                })
+            );
+            await DataExportService.exportAllWorkoutsToCSV(fullWorkouts, 'all_workouts');
+        } catch (error) {
+            console.error('Error exporting workouts:', error);
+            alert('Failed to export workouts. Please try again.');
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (tables.length === 0) return;
+        
+        try {
+            const fullWorkouts = await Promise.all(
+                tables.map(async (table) => {
+                    const fullTable = await manager.loadTable(table.id);
+                    return {
+                        ...fullTable,
+                        date: table.date,
+                        tableName: table.tableName
+                    };
+                })
+            );
+            await DataExportService.exportToPDF(fullWorkouts, 'workout_report');
+        } catch (error) {
+            console.error('Error exporting to PDF:', error);
+            alert('Failed to export to PDF. Please try again.');
+        }
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return "";
         const date = new Date(dateString);
@@ -164,474 +135,413 @@ export default function SavedTablesPage({ previewMode = false }) {
     };
 
     return (
-        <div
-            style={{
-                padding: windowWidth <= 768 ? "1rem" : "2rem",
-                paddingTop: previewMode ? "1rem" : (windowWidth <= 768 ? "3rem" : "4rem"),
-                background: theme.background,
-                minHeight: previewMode ? "auto" : "100vh",
-                color: theme.text,
-                position: "relative",
-                transition: "background-color 0.3s ease, color 0.3s ease"
-            }}
-        >
-            {/* Back to Dashboard Button */}
-            {!previewMode && (
-                <button
-                    className="notes-nav-item"
-                    onClick={() => navigate("/")}
-                    style={{
-                        position: "fixed",
-                        top: "20px",
-                        left: "20px",
-                        zIndex: 1000,
-                        opacity: showBackButton ? 1 : 0,
-                        transform: showBackButton ? "translateY(0)" : "translateY(-10px)",
-                        pointerEvents: showBackButton ? "auto" : "none",
-                        background: "rgba(255, 255, 255, 0.9)",
-                        backdropFilter: "blur(20px)",
-                        border: "1px solid rgba(0, 0, 0, 0.06)",
-                        fontSize: "0.9rem"
-                    }}
-                >
-                    ← Back to Dashboard
-                </button>
-            )}
+        <div className="saved-tables-container">
+            <style jsx>{`
+                .saved-tables-container {
+                    min-height: ${previewMode ? 'auto' : '100vh'};
+                    padding: ${isMobile ? 'var(--space-4)' : 'var(--space-8)'};
+                    padding-top: ${previewMode ? 'var(--space-4)' : (isMobile ? 'var(--space-12)' : 'var(--space-16)')};
+                    background: var(--gradient-backdrop);
+                    color: var(--primary-100);
+                    font-family: var(--font-family-primary);
+                }
+
+                .back-button {
+                    position: fixed;
+                    top: var(--space-6);
+                    left: var(--space-6);
+                    z-index: var(--z-fixed);
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-3) var(--space-6);
+                    color: var(--primary-100);
+                    font-weight: 600;
+                    text-decoration: none;
+                    transition: var(--transition-normal);
+                    cursor: pointer;
+                }
+
+                .back-button:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .page-header {
+                    text-align: center;
+                    margin-bottom: var(--space-12);
+                }
+
+                .page-title {
+                    font-size: ${isMobile ? 'var(--font-size-3xl)' : 'var(--font-size-5xl)'};
+                    font-weight: 700;
+                    margin-bottom: var(--space-4);
+                    background: linear-gradient(45deg, var(--accent-primary), var(--primary-100));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+
+                .create-button {
+                    background: var(--gradient-primary);
+                    border: none;
+                    border-radius: var(--radius-xl);
+                    padding: var(--space-4) var(--space-8);
+                    color: white;
+                    font-weight: 700;
+                    font-size: var(--font-size-lg);
+                    cursor: pointer;
+                    transition: var(--transition-normal);
+                    box-shadow: var(--shadow-glow);
+                    margin-bottom: var(--space-8);
+                }
+
+                .create-button:hover {
+                    transform: translateY(-3px);
+                    box-shadow: var(--shadow-glow-strong);
+                }
+
+                .export-actions {
+                    display: flex;
+                    justify-content: center;
+                    gap: var(--space-4);
+                    margin-bottom: var(--space-12);
+                    flex-wrap: wrap;
+                }
+
+                .export-btn {
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-3) var(--space-6);
+                    color: var(--primary-100);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition-normal);
+                    display: flex;
+                    align-items: center;
+                    gap: var(--space-2);
+                }
+
+                .export-btn:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-md);
+                }
+
+                .tables-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(${isMobile ? '280px' : '350px'}, 1fr));
+                    gap: var(--space-6);
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+
+                .table-card {
+                    background: var(--glass-bg);
+                    backdrop-filter: var(--glass-backdrop);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-2xl);
+                    padding: var(--space-6);
+                    transition: var(--transition-normal);
+                    cursor: pointer;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .table-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: var(--gradient-primary);
+                }
+
+                .table-card:hover {
+                    transform: translateY(-8px);
+                    background: rgba(255, 255, 255, 0.12);
+                    box-shadow: var(--shadow-xl);
+                    border-color: var(--accent-primary);
+                }
+
+                .card-content {
+                    margin-bottom: var(--space-6);
+                }
+
+                .table-name {
+                    font-size: var(--font-size-xl);
+                    font-weight: 700;
+                    margin-bottom: var(--space-2);
+                    color: var(--primary-100);
+                }
+
+                .table-date {
+                    color: var(--accent-primary);
+                    font-size: var(--font-size-sm);
+                    margin-bottom: var(--space-1);
+                    font-weight: 600;
+                }
+
+                .table-last-opened {
+                    color: var(--primary-300);
+                    font-size: var(--font-size-xs);
+                }
+
+                .card-actions {
+                    display: flex;
+                    gap: var(--space-3);
+                    justify-content: flex-end;
+                }
+
+                .action-btn {
+                    background: var(--glass-bg);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-md);
+                    padding: var(--space-2) var(--space-4);
+                    color: var(--primary-200);
+                    font-size: var(--font-size-xs);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition-fast);
+                    display: flex;
+                    align-items: center;
+                    gap: var(--space-1);
+                }
+
+                .action-btn:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    transform: translateY(-1px);
+                    color: var(--primary-100);
+                }
+
+                .delete-btn {
+                    background: rgba(255, 68, 102, 0.1);
+                    border-color: rgba(255, 68, 102, 0.2);
+                    color: var(--accent-error);
+                }
+
+                .delete-btn:hover {
+                    background: rgba(255, 68, 102, 0.2);
+                    color: white;
+                }
+
+                .empty-state {
+                    text-align: center;
+                    padding: var(--space-16) var(--space-8);
+                    color: var(--primary-300);
+                }
+
+                .empty-state h3 {
+                    font-size: var(--font-size-2xl);
+                    margin-bottom: var(--space-4);
+                    color: var(--primary-100);
+                }
+
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(10, 11, 15, 0.8);
+                    backdrop-filter: blur(8px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: var(--z-modal-backdrop);
+                    padding: var(--space-4);
+                }
+
+                .modal {
+                    background: var(--primary-800);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-2xl);
+                    padding: var(--space-8);
+                    max-width: 400px;
+                    width: 100%;
+                    box-shadow: var(--shadow-xl);
+                    transform: scale(0.9);
+                    animation: modalAppear 0.3s ease forwards;
+                }
+
+                @keyframes modalAppear {
+                    to {
+                        transform: scale(1);
+                    }
+                }
+
+                .modal-header {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--space-4);
+                    margin-bottom: var(--space-6);
+                }
+
+                .modal-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: linear-gradient(45deg, var(--accent-error), #dc2626);
+                    border-radius: var(--radius-full);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: var(--font-size-2xl);
+                    font-weight: bold;
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .modal-title {
+                    font-size: var(--font-size-xl);
+                    font-weight: 700;
+                    color: var(--primary-100);
+                    margin: 0;
+                }
+
+                .modal-body {
+                    color: var(--primary-300);
+                    margin-bottom: var(--space-8);
+                    line-height: 1.6;
+                    font-size: var(--font-size-sm);
+                }
+
+                .modal-actions {
+                    display: flex;
+                    gap: var(--space-4);
+                    justify-content: flex-end;
+                }
+
+                .modal-btn {
+                    padding: var(--space-3) var(--space-6);
+                    border-radius: var(--radius-md);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition-fast);
+                    border: none;
+                    font-size: var(--font-size-sm);
+                }
+
+                .modal-btn-cancel {
+                    background: var(--glass-bg);
+                    color: var(--primary-200);
+                    border: 1px solid var(--glass-border);
+                }
+
+                .modal-btn-cancel:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    color: var(--primary-100);
+                }
+
+                .modal-btn-delete {
+                    background: var(--accent-error);
+                    color: white;
+                }
+
+                .modal-btn-delete:hover {
+                    background: #dc2626;
+                    transform: translateY(-1px);
+                }
+            `}</style>
+
+            
 
             {!previewMode && (
-                <>
-                    <h1 style={{ 
-                        fontSize: windowWidth <= 768 ? "2rem" : "2.5rem", 
-                        marginBottom: windowWidth <= 768 ? "1.5rem" : "2rem",
-                        color: theme.accent,
-                        textAlign: "center",
-                        transition: "color 0.3s ease"
-                    }}>
-                        Saved Training Logs
-                    </h1>
-                    
-                    {/* New Log Button with new style */}
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: "2rem"
-                    }}>
-                        <div style={{
-                            position: "relative",
-                            width: windowWidth <= 768 ? "140px" : "160px",
-                            height: windowWidth <= 768 ? "50px" : "60px",
-                            background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
-                            borderRadius: "50px",
-                            border: "none",
-                            outline: "none",
-                            cursor: "pointer",
-                            boxShadow: "0 15px 30px rgba(0, 0, 0, 0.3)",
-                            overflow: "hidden",
-                            transition: "transform 0.3s ease"
-                        }}
-                        onMouseEnter={() => setIsHoveringNewLog(true)}
-                        onMouseLeave={() => setIsHoveringNewLog(false)}
-                        onClick={handleNewTable}
-                        >
-                            <span style={{
-                                position: "absolute",
-                                width: "100%",
-                                top: isHoveringNewLog ? "-100%" : "50%",
-                                left: 0,
-                                transform: "translateY(-50%)",
-                                fontSize: "14px",
-                                textTransform: "uppercase",
-                                letterSpacing: "1px",
-                                color: "#fff",
-                                fontWeight: "600",
-                                textAlign: "center",
-                                transition: "top 0.5s ease"
-                            }}>
-                                + New Log
-                            </span>
-                            <span style={{
-                                position: "absolute",
-                                width: "100%",
-                                top: isHoveringNewLog ? "50%" : "150%",
-                                left: 0,
-                                transform: "translateY(-50%)",
-                                fontSize: "14px",
-                                textTransform: "uppercase",
-                                letterSpacing: "1px",
-                                color: "#fff",
-                                fontWeight: "600",
-                                textAlign: "center",
-                                transition: "top 0.5s ease"
-                            }}>
-                                Let's Begin
-                            </span>
-                        </div>
-                    </div>
+                <div className="page-header">
+                    <h1 className="page-title">Training Logs</h1>
+                    <button className="create-button" onClick={handleNewTable}>
+                        + Create New Workout
+                    </button>
 
-                    {/* Export Buttons */}
                     {tables.length > 0 && (
-                        <div style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: "1rem",
-                            marginBottom: "2rem",
-                            flexWrap: "wrap"
-                        }}>
-                            <button
-                                onClick={handleExportAllWorkouts}
-                                style={{
-                                    background: theme.surfaceSecondary,
-                                    color: theme.accent,
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "12px",
-                                    padding: windowWidth <= 768 ? "0.6rem 1rem" : "0.8rem 1.5rem",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    fontSize: windowWidth <= 768 ? "0.9rem" : "1rem",
-                                    transition: "all 0.3s ease",
-                                    minHeight: "44px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem"
-                                }}
-                                onMouseOver={e => {
-                                    e.currentTarget.style.background = theme.surfaceTertiary;
-                                    e.currentTarget.style.borderColor = theme.accent;
-                                    e.currentTarget.style.transform = "translateY(-2px)";
-                                }}
-                                onMouseOut={e => {
-                                    e.currentTarget.style.background = theme.surfaceSecondary;
-                                    e.currentTarget.style.borderColor = theme.border;
-                                    e.currentTarget.style.transform = "translateY(0)";
-                                }}
-                            >
-                                📊 Export CSV
+                        <div className="export-actions">
+                            <button className="export-btn" onClick={handleExportAll}>
+                                📊 Export All CSV
                             </button>
-                            <button
-                                onClick={handleExportToPDF}
-                                style={{
-                                    background: theme.surfaceSecondary,
-                                    color: theme.accent,
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "12px",
-                                    padding: windowWidth <= 768 ? "0.6rem 1rem" : "0.8rem 1.5rem",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    fontSize: windowWidth <= 768 ? "0.9rem" : "1rem",
-                                    transition: "all 0.3s ease",
-                                    minHeight: "44px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem"
-                                }}
-                                onMouseOver={e => {
-                                    e.currentTarget.style.background = theme.surfaceTertiary;
-                                    e.currentTarget.style.borderColor = theme.accent;
-                                    e.currentTarget.style.transform = "translateY(-2px)";
-                                }}
-                                onMouseOut={e => {
-                                    e.currentTarget.style.background = theme.surfaceSecondary;
-                                    e.currentTarget.style.borderColor = theme.border;
-                                    e.currentTarget.style.transform = "translateY(0)";
-                                }}
-                            >
-                                📄 Export PDF
+                            <button className="export-btn" onClick={handleExportPDF}>
+                                📄 Export PDF Report
                             </button>
                         </div>
                     )}
-                </>
-            )}
-
-            {isLoading ? (
-                <SkeletonLoader type="card" count={3} />
-            ) : tables.length === 0 ? (
-                <p style={{ 
-                    opacity: 0.7,
-                    fontSize: "1.1rem",
-                    textAlign: "center",
-                    marginTop: "2rem",
-                    color: theme.textSecondary,
-                    transition: "color 0.3s ease"
-                }}>
-                    No saved logs yet.
-                </p>
-            ) : (
-                <div className="notes-list">
-                    {tables.map((table) => (
-                        <div
-                            key={table.id}
-                            className="notes-list-item"
-                            style={{
-                                display: "flex",
-                                flexDirection: windowWidth <= 480 ? "column" : "row",
-                                justifyContent: "space-between",
-                                alignItems: windowWidth <= 480 ? "stretch" : "center",
-                                gap: windowWidth <= 480 ? "1rem" : "0"
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "translateY(-4px)";
-                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.15)";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
-                                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.1)";
-                            }}
-                        >
-                            <div 
-                                style={{ 
-                                    cursor: "pointer",
-                                    flex: 1,
-                                    paddingRight: "1rem"
-                                }} 
-                                onClick={() => handleOpenTable(table.id)}
-                            >
-                                <strong style={{ 
-                                    fontSize: windowWidth <= 768 ? "1.1rem" : "1.2rem",
-                                    color: theme.text,
-                                    transition: "color 0.3s ease",
-                                    display: "block",
-                                    marginBottom: "0.5rem"
-                                }}>
-                                    {table.tableName}
-                                </strong>
-                                <div style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "1rem"
-                                }}>
-                                    <span style={{ 
-                                        color: theme.accent,
-                                        fontSize: "0.9rem",
-                                        fontWeight: "600",
-                                        transition: "color 0.3s ease"
-                                    }}>
-                                        {formatDate(table.date)}
-                                    </span>
-                                    {table.lastOpened && (
-                                        <span style={{ 
-                                            opacity: 0.7,
-                                            color: theme.textSecondary,
-                                            fontSize: "0.8rem",
-                                            transition: "color 0.3s ease"
-                                        }}>
-                                            Last opened: {formatDate(table.lastOpened)}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            {!previewMode && (
-                                <div style={{
-                                    display: "flex",
-                                    gap: "0.5rem",
-                                    alignItems: "center",
-                                    flexWrap: "wrap"
-                                }}>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleExportSingleWorkout(table.id, table.tableName);
-                                        }}
-                                        style={{
-                                            background: theme.surfaceSecondary,
-                                            color: theme.accent,
-                                            border: `1px solid ${theme.border}`,
-                                            borderRadius: "8px",
-                                            padding: "0.5rem 0.8rem",
-                                            cursor: "pointer",
-                                            fontWeight: "600",
-                                            fontSize: "0.8rem",
-                                            transition: "all 0.2s ease",
-                                            minHeight: "44px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.3rem"
-                                        }}
-                                        onMouseOver={e => {
-                                            e.currentTarget.style.background = theme.surfaceTertiary;
-                                            e.currentTarget.style.borderColor = theme.accent;
-                                            e.currentTarget.style.transform = "translateY(-1px)";
-                                        }}
-                                        onMouseOut={e => {
-                                            e.currentTarget.style.background = theme.surfaceSecondary;
-                                            e.currentTarget.style.borderColor = theme.border;
-                                            e.currentTarget.style.transform = "translateY(0)";
-                                        }}
-                                    >
-                                        📊 Export
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteTable(table.id, table.tableName)}
-                                        style={{
-                                            background: theme.surfaceSecondary,
-                                            color: theme.textSecondary,
-                                            border: `1px solid ${theme.border}`,
-                                            borderRadius: "8px",
-                                            padding: "0.5rem 1rem",
-                                            cursor: "pointer",
-                                            fontWeight: "600",
-                                            fontSize: "0.8rem",
-                                            transition: "background 0.2s ease, border-color 0.2s ease",
-                                            minHeight: "44px"
-                                        }}
-                                        onMouseOver={e => {
-                                            e.currentTarget.style.background = theme.surfaceTertiary;
-                                            e.currentTarget.style.borderColor = theme.textMuted;
-                                        }}
-                                        onMouseOut={e => {
-                                            e.currentTarget.style.background = theme.surfaceSecondary;
-                                            e.currentTarget.style.borderColor = theme.border;
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
                 </div>
             )}
 
-            {/* Delete Confirmation Popup */}
-            {deletePopup.show && (
-                <div style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "rgba(0, 0, 0, 0.8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 2000,
-                    padding: "1rem"
-                }}
-                onClick={cancelDelete}
-                >
-                    <div style={{
-                        background: "rgba(255, 255, 255, 0.05)",
-                        borderRadius: "20px",
-                        padding: "2rem",
-                        maxWidth: "90vw",
-                        width: "400px",
-                        border: `1px solid rgba(255, 255, 255, 0.1)`,
-                        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-                        backdropFilter: "blur(20px)",
-                        animation: "popupSlideIn 0.3s ease-out"
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    >
-                        <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            marginBottom: "1.5rem",
-                            gap: "1rem"
-                        }}>
-                            <div style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "50%",
-                                background: "rgba(239, 68, 68, 0.1)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                border: "2px solid rgba(239, 68, 68, 0.3)"
-                            }}>
-                                <span style={{ fontSize: "1.5rem", color: "#ef4444" }}>!</span>
-                            </div>
-                            <div>
-                                <h3 style={{
-                                    margin: 0,
-                                    color: theme.text,
-                                    fontSize: "1.3rem",
-                                    fontWeight: "600"
-                                }}>
-                                    Delete Log
-                                </h3>
-                                <p style={{
-                                    margin: "0.5rem 0 0 0",
-                                    color: theme.textSecondary,
-                                    fontSize: "0.9rem"
-                                }}>
-                                    This action cannot be undone
-                                </p>
-                            </div>
-                        </div>
-
-                        <div style={{
-                            background: theme.surfaceSecondary,
-                            padding: "1rem",
-                            borderRadius: "8px",
-                            marginBottom: "1.5rem",
-                            border: `1px solid ${theme.borderLight}`
-                        }}>
-                            <p style={{
-                                margin: 0,
-                                color: theme.text,
-                                fontSize: "1rem",
-                                lineHeight: "1.5"
-                            }}>
-                                Are you sure you want to delete <strong>"{deletePopup.tableName}"</strong>?
-                            </p>
-                            <p style={{
-                                margin: "0.5rem 0 0 0",
-                                color: theme.textSecondary,
-                                fontSize: "0.9rem",
-                                lineHeight: "1.4"
-                            }}>
-                                All workout data in this log will be permanently removed.
-                            </p>
-                        </div>
-
-                        <div style={{
-                            display: "flex",
-                            gap: "1rem",
-                            justifyContent: "flex-end"
-                        }}>
-                            <button
-                                onClick={cancelDelete}
-                                style={{
-                                    background: theme.surfaceSecondary,
-                                    color: theme.textSecondary,
-                                    border: `1px solid ${theme.border}`,
-                                    borderRadius: "8px",
-                                    padding: "0.8rem 1.5rem",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    fontSize: "1rem",
-                                    transition: "background 0.2s ease, border-color 0.2s ease"
-                                }}
-                                onMouseOver={e => {
-                                    e.currentTarget.style.background = theme.surfaceTertiary;
-                                    e.currentTarget.style.borderColor = theme.textMuted;
-                                }}
-                                onMouseOut={e => {
-                                    e.currentTarget.style.background = theme.surfaceSecondary;
-                                    e.currentTarget.style.borderColor = theme.border;
-                                }}
+            <div className="content">
+                {isLoading ? (
+                    <SkeletonLoader type="card" count={3} />
+                ) : tables.length === 0 ? (
+                    <div className="empty-state">
+                        <h3>No workout logs yet</h3>
+                        <p>Create your first workout to get started!</p>
+                    </div>
+                ) : (
+                    <div className="tables-grid">
+                        {tables.map((table) => (
+                            <div
+                                key={table.id}
+                                className="table-card"
+                                onClick={() => navigate(`/log/${table.id}`)}
                             >
+                                <div className="card-content">
+                                    <h3 className="table-name">{table.tableName}</h3>
+                                    <div className="table-date">{formatDate(table.date)}</div>
+                                    {table.lastOpened && (
+                                        <div className="table-last-opened">
+                                            Last opened: {formatDate(table.lastOpened)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!previewMode && (
+                                    <div className="card-actions">
+                                        <button
+                                            className="action-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleExportSingle(table.id, table.tableName);
+                                            }}
+                                        >
+                                            📊 Export
+                                        </button>
+                                        <button
+                                            className="action-btn delete-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openDeleteModal(table.id, table.tableName);
+                                            }}
+                                        >
+                                            🗑 Delete
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {deleteModal.isOpen && (
+                <div className="modal-overlay" onClick={closeDeleteModal}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-icon">!</div>
+                            <h3 className="modal-title">Delete Workout</h3>
+                        </div>
+                        <div className="modal-body">
+                            Are you sure you want to delete <strong>"{deleteModal.tableName}"</strong>?
+                            <br />
+                            This action cannot be undone and all workout data will be permanently removed.
+                        </div>
+                        <div className="modal-actions">
+                            <button className="modal-btn modal-btn-cancel" onClick={closeDeleteModal}>
                                 Cancel
                             </button>
-                            <button
-                                onClick={confirmDelete}
-                                style={{
-                                    background: "#ef4444",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    padding: "0.8rem 1.5rem",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    fontSize: "1rem",
-                                    transition: "background 0.2s ease"
-                                }}
-                                onMouseOver={e => e.currentTarget.style.background = "#dc2626"}
-                                onMouseOut={e => e.currentTarget.style.background = "#ef4444"}
-                            >
-                                Delete Log
+                            <button className="modal-btn modal-btn-delete" onClick={confirmDelete}>
+                                Delete Workout
                             </button>
                         </div>
                     </div>

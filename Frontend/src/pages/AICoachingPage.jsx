@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import AIService from "../services/aiCacheService";
 
 const AICoachingPage = () => {
     const { theme } = useTheme();
-    const navigate = useNavigate();
     const [messages, setMessages] = useState([
         {
             id: 1,
@@ -16,27 +14,10 @@ const AICoachingPage = () => {
     ]);
     const [inputMessage, setInputMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [showBackButton, setShowBackButton] = useState(true);
-    const [lastScrollY, setLastScrollY] = useState(0);
-    const [rateLimitMessage, setRateLimitMessage] = useState("");
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    // Scroll detection for back button
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            const isAtTop = currentScrollY < 50;
-            const isScrollingUp = currentScrollY < lastScrollY;
-            
-            setShowBackButton(isAtTop || isScrollingUp);
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
-
+   
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,12 +43,15 @@ const AICoachingPage = () => {
         setIsLoading(true);
 
         try {
-            setRateLimitMessage("");
-            
             // Use cached AI service with rate limiting
             const result = await AIService.sendChatMessage({
                 message: userMessage.content,
-                conversation_history: messages.slice(-5) // Send last 5 messages for context
+                conversation_history: messages.slice(-5).map(msg => ({
+                    type: msg.type,
+                    content: msg.content,
+                    timestamp: msg.timestamp?.toISOString()
+                })),
+                user_data: null
             });
 
             const data = result.data;
@@ -87,7 +71,6 @@ const AICoachingPage = () => {
             
             if (error.message.includes('Rate limited')) {
                 errorContent = error.message;
-                setRateLimitMessage(error.message);
             }
             
             const errorMessage = {
@@ -129,21 +112,19 @@ const AICoachingPage = () => {
 
     return (
         <div style={{
-            background: theme.background,
+            background: "var(--gradient-backdrop)",
             minHeight: "100vh",
-            color: theme.text,
+            color: "var(--primary-100)",
             display: "flex",
-            flexDirection: "column",
-            transition: "background-color 0.3s ease, color 0.3s ease"
+            flexDirection: "column"
         }}>
             {/* Header with Back Button */}
             <div style={{
                 position: "sticky",
                 top: 0,
                 zIndex: 100,
-                background: theme.background,
-                borderBottom: `1px solid ${theme.border}`,
-                transition: "all 0.3s ease"
+                background: "var(--gradient-backdrop)",
+                borderBottom: "1px solid var(--glass-border)"
             }}>
                 <div style={{
                     padding: "1rem 2rem",
@@ -151,40 +132,38 @@ const AICoachingPage = () => {
                     alignItems: "center",
                     gap: "1rem"
                 }}>
-                    <button
-                        onClick={() => navigate("/")}
-                        style={{
-                            background: theme.accentSecondary,
-                            color: theme.accent,
-                            padding: "0.7rem 1.4rem",
-                            border: "none",
-                            borderRadius: "10px",
-                            fontWeight: "600",
-                            fontSize: "1rem",
-                            cursor: "pointer",
-                            transition: "all 0.3s ease",
-                            opacity: showBackButton ? 1 : 0,
-                            transform: showBackButton ? "translateX(0)" : "translateX(-10px)",
-                            pointerEvents: showBackButton ? "auto" : "none"
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-                        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
-                    >
-                        ← Back to Dashboard
-                    </button>
                     <div style={{ flex: 1 }}>
-                        <h1 style={{
-                            fontSize: "1.8rem",
-                            margin: 0,
-                            color: theme.accent,
-                            fontWeight: "700"
-                        }}>
-                            🤖 AI Fitness Coach
-                        </h1>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                            <div style={{
+                                background: "var(--gradient-primary)",
+                                borderRadius: "var(--radius-lg)",
+                                padding: "var(--space-2)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                            }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: "24px", height: "24px" }}>
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                                    <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3"/>
+                                    <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </div>
+                            <h1 style={{
+                                fontSize: "var(--font-size-2xl)",
+                                margin: 0,
+                                color: "var(--accent-primary)",
+                                fontWeight: "700"
+                            }}>
+                                AI Fitness Coach
+                            </h1>
+                        </div>
                         <p style={{
                             margin: "0.2rem 0 0 0",
-                            color: theme.textSecondary,
-                            fontSize: "0.9rem"
+                            color: "var(--primary-400)",
+                            fontSize: "var(--font-size-sm)"
                         }}>
                             Your personal AI trainer is here to help
                         </p>
@@ -203,16 +182,18 @@ const AICoachingPage = () => {
                 {messages.length <= 1 && (
                     <div style={{
                         marginBottom: "2rem",
-                        background: theme.cardBackground,
-                        borderRadius: "16px",
-                        padding: "1.5rem",
-                        border: `1px solid ${theme.cardBorder}`,
-                        boxShadow: theme.shadowLight
+                        background: "var(--glass-bg)",
+                        borderRadius: "var(--radius-xl)",
+                        padding: "var(--space-6)",
+                        border: "1px solid var(--glass-border)",
+                        backdropFilter: "var(--glass-backdrop)",
+                        WebkitBackdropFilter: "var(--glass-backdrop)",
+                        boxShadow: "var(--shadow-lg)"
                     }}>
                         <h3 style={{
-                            margin: "0 0 1rem 0",
-                            color: theme.accent,
-                            fontSize: "1.1rem"
+                            margin: "0 0 var(--space-4) 0",
+                            color: "var(--accent-primary)",
+                            fontSize: "var(--font-size-lg)"
                         }}>
                             Quick Actions
                         </h3>
@@ -226,25 +207,25 @@ const AICoachingPage = () => {
                                     key={index}
                                     onClick={() => handleQuickAction(action)}
                                     style={{
-                                        background: theme.surfaceSecondary,
-                                        color: theme.text,
-                                        border: `1px solid ${theme.border}`,
-                                        borderRadius: "8px",
-                                        padding: "0.8rem 1rem",
+                                        background: "rgba(255, 255, 255, 0.05)",
+                                        color: "var(--primary-100)",
+                                        border: "1px solid var(--glass-border)",
+                                        borderRadius: "var(--radius-md)",
+                                        padding: "var(--space-3) var(--space-4)",
                                         cursor: "pointer",
-                                        fontSize: "0.9rem",
+                                        fontSize: "var(--font-size-sm)",
                                         fontWeight: "500",
-                                        transition: "all 0.2s ease",
+                                        transition: "all var(--transition-normal)",
                                         textAlign: "left"
                                     }}
                                     onMouseOver={e => {
-                                        e.currentTarget.style.background = theme.surfaceTertiary;
-                                        e.currentTarget.style.borderColor = theme.accent;
+                                        e.currentTarget.style.background = "rgba(0, 212, 255, 0.1)";
+                                        e.currentTarget.style.borderColor = "var(--accent-primary)";
                                         e.currentTarget.style.transform = "translateY(-1px)";
                                     }}
                                     onMouseOut={e => {
-                                        e.currentTarget.style.background = theme.surfaceSecondary;
-                                        e.currentTarget.style.borderColor = theme.border;
+                                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                                        e.currentTarget.style.borderColor = "var(--glass-border)";
                                         e.currentTarget.style.transform = "translateY(0)";
                                     }}
                                 >
@@ -276,14 +257,21 @@ const AICoachingPage = () => {
                                     width: "40px",
                                     height: "40px",
                                     borderRadius: "50%",
-                                    background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
+                                    background: "var(--gradient-primary)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     fontSize: "1.2rem",
                                     flexShrink: 0
                                 }}>
-                                    🤖
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
+                                        <path d="M9 12l2 2 4-4"/>
+                                        <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                                        <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                                        <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3"/>
+                                        <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
                                 </div>
                             )}
                             
@@ -357,7 +345,14 @@ const AICoachingPage = () => {
                                 justifyContent: "center",
                                 fontSize: "1.2rem"
                             }}>
-                                🤖
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                                    <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3"/>
+                                    <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
                             </div>
                             <div style={{
                                 background: theme.cardBackground,
@@ -454,11 +449,11 @@ const AICoachingPage = () => {
                         disabled={!inputMessage.trim() || isLoading}
                         style={{
                             background: (!inputMessage.trim() || isLoading) 
-                                ? theme.surfaceSecondary 
-                                : theme.accent,
+                                ? "rgba(255, 255, 255, 0.05)" 
+                                : "var(--accent-primary)",
                             color: (!inputMessage.trim() || isLoading) 
-                                ? theme.textMuted 
-                                : theme.background,
+                                ? "var(--primary-500)" 
+                                : "var(--primary-950)",
                             border: "none",
                             borderRadius: "12px",
                             padding: "1rem 1.5rem",
