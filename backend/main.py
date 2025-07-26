@@ -405,6 +405,9 @@ def insert_table_schema_to_db(table_schema: dict, db: Session):
     db.refresh(db_table)
 
 # --- Endpoints ---
+@app.get("/")
+def startPage():
+    return {"SetPad Backend Running"}
 @app.get("/tables", response_model=List[TableSchema])
 def get_tables(db: Session = Depends(get_db)):
     tables = db.query(TableModelDB).all()
