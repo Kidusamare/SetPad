@@ -1,0 +1,27 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+
+[[services]]
+name = "backend"
+source = "Backend"
+rootDirectory = "Backend"
+
+[services.healthcheck]
+path = "/"
+port = 8000
+
+[[services]]
+name = "frontend" 
+source = "Frontend"
+rootDirectory = "Frontend"
+
+[services.build]
+buildCommand = "npm run build"
+
+[services.deploy]
+startCommand = "npx serve -s build -l $PORT"

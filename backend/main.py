@@ -1,284 +1,85 @@
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-import jwt
-import bcrypt
-import sqlite3
+from sqlalchemy.orm import Session
+from typing import List
+
+# Import all the refactored modules
+from schemas import TableSchema, AICoachingRequest, AICoachingResponse
+from models import Base, Table as TableModelDB
+from db import SessionLocal, get_db, db_table_to_schema
+from get_endpoints import get_start_page, get_tables, get_table, get_workout_analysis
+from put_post_endpoints import (
+    create_table, update_table, import_data, import_data_simple,
+    ai_coaching_chat, generate_workout_plan, get_exercise_suggestions
+)
+
 import os
-from datetime import datetime, timedelta
-import uuid
+from dotenv import load_dotenv
 
-app = FastAPI()
+# Load environment variables
+load_dotenv()
 
-# CORS middleware
+app = FastAPI(title="Fitness Tracker API", description="AI-powered fitness tracking and coaching API", version="1.0.0")
+
+# CORS configuration for production
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    # Add your production frontend URLs here
+    # "https://your-frontend-domain.com",
+]
+
+# Allow all origins in development
+if os.getenv("ENVIRONMENT") == "development":
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-# JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Schemas are now imported from schemas.py module
 
-security = HTTPBearer()
+# Helper functions are now imported from db.py module
 
-# Database setup
-DATABASE_URL = "data.db"
+# AI functions are now imported from ai.py module
 
-def init_db():
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    # Users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # Training logs table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS training_logs (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            name TEXT NOT NULL,
-            date TEXT NOT NULL,
-            data TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    """)
-    
-    conn.commit()
-    conn.close()
+# --- API Routes ---
+# GET endpoints
+app.get("/")(get_start_page)
+app.get("/tables", response_model=List[TableSchema])(get_tables)
+app.get("/tables/{table_id}", response_model=TableSchema)(get_table)
+app.get("/ai-coaching/workout-analysis")(get_workout_analysis)
 
-# Initialize database on startup
-init_db()
+# POST/PUT endpoints
+app.post("/tables", response_model=TableSchema)(create_table)
+app.put("/tables/{table_id}", response_model=TableSchema)(update_table)
+app.post("/import-data")(import_data)
+app.post("/import-data-simple")(import_data_simple)
+app.post("/ai-coaching", response_model=AICoachingResponse)(ai_coaching_chat)
+app.post("/ai-coaching/generate-workout")(generate_workout_plan)
+app.post("/ai-coaching/exercise-suggestions")(get_exercise_suggestions)
 
-# Pydantic models
-class UserRegistration(BaseModel):
-    email: str
-    password: str
+# DELETE endpoints (kept in main.py as requested)
+@app.delete("/tables/{table_id}")
+def delete_table(table_id: str, db: Session = Depends(get_db)):
+    """Delete a workout table by ID"""
+    db_table = db.query(TableModelDB).filter(TableModelDB.id == table_id).first()
+    if not db_table:
+        raise HTTPException(status_code=404, detail="Table not found")
+    db.delete(db_table)
+    db.commit()
+    return {"success": True}
 
-class UserLogin(BaseModel):
-    email: str
-    password: str
+# Import endpoints moved to put_post_endpoints.py
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+# AI Coaching schemas moved to schemas.py
 
-class User(BaseModel):
-    id: str
-    email: str
+# AI coaching functions moved to ai.py
 
-class TrainingLogCreate(BaseModel):
-    name: str
-    date: str
-    data: dict
+# AI coaching endpoints moved to put_post_endpoints.py
 
-class TrainingLog(BaseModel):
-    id: str
-    name: str
-    date: str
-    data: dict
 
-# Utility functions
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except jwt.PyJWTError:
-        raise credentials_exception
-    
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, email FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-    
-    if user is None:
-        raise credentials_exception
-    
-    return User(id=user[0], email=user[1])
-
-# Authentication endpoints
-@app.post("/api/auth/register", response_model=Token)
-async def register(user: UserRegistration):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    # Check if user already exists
-    cursor.execute("SELECT id FROM users WHERE email = ?", (user.email,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create new user
-    user_id = str(uuid.uuid4())
-    password_hash = hash_password(user.password)
-    
-    cursor.execute(
-        "INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)",
-        (user_id, user.email, password_hash)
-    )
-    conn.commit()
-    conn.close()
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user_id}, expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.post("/api/auth/login", response_model=Token)
-async def login(user: UserLogin):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, password_hash FROM users WHERE email = ?", (user.email,))
-    db_user = cursor.fetchone()
-    conn.close()
-    
-    if not db_user or not verify_password(user.password, db_user[1]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": db_user[0]}, expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.get("/api/auth/me", response_model=User)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    return current_user
-
-# Training log endpoints (protected)
-@app.post("/api/training-logs", response_model=TrainingLog)
-async def create_training_log(
-    log: TrainingLogCreate,
-    current_user: User = Depends(get_current_user)
-):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    log_id = str(uuid.uuid4())
-    
-    cursor.execute(
-        "INSERT INTO training_logs (id, user_id, name, date, data) VALUES (?, ?, ?, ?, ?)",
-        (log_id, current_user.id, log.name, log.date, str(log.data))
-    )
-    conn.commit()
-    conn.close()
-    
-    return TrainingLog(id=log_id, name=log.name, date=log.date, data=log.data)
-
-@app.get("/api/training-logs")
-async def get_training_logs(current_user: User = Depends(get_current_user)):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT id, name, date, data FROM training_logs WHERE user_id = ? ORDER BY created_at DESC",
-        (current_user.id,)
-    )
-    logs = cursor.fetchall()
-    conn.close()
-    
-    return [
-        {
-            "id": log[0],
-            "name": log[1],
-            "date": log[2],
-            "data": eval(log[3])  # Note: In production, use proper JSON serialization
-        }
-        for log in logs
-    ]
-
-@app.get("/api/training-logs/{log_id}")
-async def get_training_log(log_id: str, current_user: User = Depends(get_current_user)):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT id, name, date, data FROM training_logs WHERE id = ? AND user_id = ?",
-        (log_id, current_user.id)
-    )
-    log = cursor.fetchone()
-    conn.close()
-    
-    if not log:
-        raise HTTPException(status_code=404, detail="Training log not found")
-    
-    return {
-        "id": log[0],
-        "name": log[1],
-        "date": log[2],
-        "data": eval(log[3])
-    }
-
-@app.delete("/api/training-logs/{log_id}")
-async def delete_training_log(log_id: str, current_user: User = Depends(get_current_user)):
-    conn = sqlite3.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "DELETE FROM training_logs WHERE id = ? AND user_id = ?",
-        (log_id, current_user.id)
-    )
-    
-    if cursor.rowcount == 0:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Training log not found")
-    
-    conn.commit()
-    conn.close()
-    
-    return {"message": "Training log deleted successfully"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)

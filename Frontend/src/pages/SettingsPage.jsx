@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 
 export default function SettingsPage() {
-  const navigate = useNavigate();
-  const { theme, themeName, toggleTheme } = useTheme();
+  const { themeName, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState("");
 
   // Update time every second
@@ -25,49 +23,47 @@ export default function SettingsPage() {
     return () => clearInterval(interval);
   }, []);
 
+  
   return (
     <div style={{ 
-      background: theme.background, 
+      background: "var(--gradient-backdrop)", 
       minHeight: "100vh", 
-      color: theme.text, 
+      color: "var(--primary-100)", 
       padding: "2rem",
       paddingTop: "5rem",
-      position: "relative",
-      transition: "background-color 0.3s ease, color 0.3s ease"
+      position: "relative"
     }}>
-      {/* Back to Dashboard Button */}
-      <button
-        onClick={() => navigate("/")}
-        style={{
-          position: "fixed",
-          top: "1rem",
-          left: "1rem",
-          background: theme.accentSecondary,
-          color: theme.accent,
-          padding: "0.7rem 1.4rem",
-          border: "none",
-          borderRadius: "10px",
-          fontWeight: "600",
-          fontSize: "1rem",
-          cursor: "pointer",
-          zIndex: 1000,
-          transition: "background 0.2s ease"
-        }}
-        onMouseOver={e => e.currentTarget.style.background = theme.accentHover}
-        onMouseOut={e => e.currentTarget.style.background = theme.accentSecondary}
-      >
-        ← Back to Dashboard
-      </button>
-
-      <h1 style={{ 
-        fontSize: "2.5rem", 
-        marginBottom: "2rem",
-        color: theme.accent,
-        textAlign: "center",
-        transition: "color 0.3s ease"
+      
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        gap: "var(--space-4)",
+        marginBottom: "var(--space-8)"
       }}>
-        Settings
-      </h1>
+        <div style={{
+          background: "var(--gradient-primary)",
+          borderRadius: "var(--radius-xl)",
+          padding: "var(--space-3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: "32px", height: "32px" }}>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </div>
+        <h1 style={{ 
+          fontSize: "var(--font-size-4xl)", 
+          margin: 0,
+          color: "var(--accent-primary)",
+          fontWeight: 700,
+          letterSpacing: "-0.02em"
+        }}>
+          Settings
+        </h1>
+      </div>
 
       <div style={{
         maxWidth: "800px", // Increased max width for better layout
@@ -76,20 +72,21 @@ export default function SettingsPage() {
       }}>
         {/* UI Settings Section */}
         <div style={{
-          background: theme.cardBackground,
-          borderRadius: "20px",
-          padding: "2rem",
-          marginBottom: "2rem",
-          border: `1px solid ${theme.cardBorder}`,
-          boxShadow: theme.shadow,
-          transition: "background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease"
+          background: "var(--glass-bg)",
+          borderRadius: "var(--radius-2xl)",
+          padding: "var(--space-8)",
+          marginBottom: "var(--space-8)",
+          border: "1px solid var(--glass-border)",
+          backdropFilter: "var(--glass-backdrop)",
+          WebkitBackdropFilter: "var(--glass-backdrop)",
+          boxShadow: "var(--shadow-lg)"
         }}>
           <h2 style={{
-            fontSize: "1.8rem",
-            marginBottom: "2rem",
-            color: theme.accent,
+            fontSize: "var(--font-size-2xl)",
+            marginBottom: "var(--space-8)",
+            color: "var(--accent-primary)",
             textAlign: "center",
-            transition: "color 0.3s ease"
+            fontWeight: 600
           }}>
             UI Settings
           </h2>
@@ -99,14 +96,14 @@ export default function SettingsPage() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "2rem"
+            gap: "var(--space-8)"
           }}>
             <h3 style={{
-              fontSize: "1.3rem",
-              marginBottom: "1rem",
-              color: theme.text,
+              fontSize: "var(--font-size-xl)",
+              marginBottom: "var(--space-4)",
+              color: "var(--primary-100)",
               textAlign: "center",
-              transition: "color 0.3s ease"
+              fontWeight: 500
             }}>
               Theme Preference
             </h3>
@@ -233,9 +230,8 @@ export default function SettingsPage() {
             <p style={{
               textAlign: "center",
               opacity: 0.7,
-              fontSize: "0.9rem",
-              color: theme.textSecondary,
-              transition: "color 0.3s ease",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--primary-400)",
               maxWidth: "400px",
               lineHeight: "1.5"
             }}>
@@ -244,86 +240,55 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Account Settings Section */}
-        <div style={{
-          background: theme.cardBackground,
-          borderRadius: "20px",
-          padding: "2rem",
-          marginBottom: "2rem",
-          border: `1px solid ${theme.cardBorder}`,
-          boxShadow: theme.shadow,
-          transition: "background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease"
-        }}>
-          <h2 style={{
-            fontSize: "1.8rem",
-            marginBottom: "1.5rem",
-            color: theme.accent,
-            transition: "color 0.3s ease"
-          }}>
-            Account Settings
-          </h2>
-          <p style={{ 
-            opacity: 0.7, 
-            marginBottom: "1rem",
-            color: theme.textSecondary,
-            transition: "color 0.3s ease",
-            lineHeight: "1.5"
-          }}>
-            More account settings will be available here soon.
-          </p>
-        </div>
-
         {/* App Information Section */}
         <div style={{
-          background: theme.cardBackground,
-          borderRadius: "20px",
-          padding: "2rem",
-          border: `1px solid ${theme.cardBorder}`,
-          boxShadow: theme.shadow,
-          transition: "background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease"
+          background: "var(--glass-bg)",
+          borderRadius: "var(--radius-2xl)",
+          padding: "var(--space-8)",
+          border: "1px solid var(--glass-border)",
+          backdropFilter: "var(--glass-backdrop)",
+          WebkitBackdropFilter: "var(--glass-backdrop)",
+          boxShadow: "var(--shadow-lg)"
         }}>
           <h2 style={{
-            fontSize: "1.8rem",
-            marginBottom: "1.5rem",
-            color: theme.accent,
-            transition: "color 0.3s ease"
+            fontSize: "var(--font-size-2xl)",
+            marginBottom: "var(--space-6)",
+            color: "var(--accent-primary)",
+            fontWeight: 600
           }}>
             App Information
           </h2>
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1rem"
+            gap: "var(--space-4)"
           }}>
             <div style={{
-              padding: "1rem",
-              background: theme.surfaceSecondary,
-              borderRadius: "10px",
-              border: `1px solid ${theme.borderLight}`,
-              transition: "background-color 0.3s ease, border-color 0.3s ease"
+              padding: "var(--space-4)",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "var(--radius-lg)",
+              border: "1px solid var(--glass-border)"
             }}>
-              <strong style={{ color: theme.accent, display: "block", marginBottom: "0.5rem" }}>Version</strong>
-              <span style={{ color: theme.textSecondary }}>1.0.0</span>
+              <strong style={{ color: "var(--accent-primary)", display: "block", marginBottom: "var(--space-2)" }}>Version</strong>
+              <span style={{ color: "var(--primary-300)" }}>1.0.0</span>
             </div>
             <div style={{
-              padding: "1rem",
-              background: theme.surfaceSecondary,
-              borderRadius: "10px",
-              border: `1px solid ${theme.borderLight}`,
-              transition: "background-color 0.3s ease, border-color 0.3s ease"
+              padding: "var(--space-4)",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "var(--radius-lg)",
+              border: "1px solid var(--glass-border)"
             }}>
-              <strong style={{ color: theme.accent, display: "block", marginBottom: "0.5rem" }}>Built with</strong>
-              <span style={{ color: theme.textSecondary }}>React, Firebase, Firestore</span>
+              <strong style={{ color: "var(--accent-primary)", display: "block", marginBottom: "var(--space-2)" }}>Built with</strong>
+              <span style={{ color: "var(--primary-300)" }}>React, FastAPI</span>
             </div>
             <div style={{
-              padding: "1rem",
-              background: theme.surfaceSecondary,
-              borderRadius: "10px",
-              border: `1px solid ${theme.borderLight}`,
-              transition: "background-color 0.3s ease, border-color 0.3s ease"
+              padding: "var(--space-4)",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "var(--radius-lg)",
+              border: "1px solid var(--glass-border)"
             }}>
-              <strong style={{ color: theme.accent, display: "block", marginBottom: "0.5rem" }}>Deployed on</strong>
-              <span style={{ color: theme.textSecondary }}>Vercel</span>
+              <strong style={{ color: "var(--accent-primary)", display: "block", marginBottom: "var(--space-2)" }}>Deployed on</strong>
+              <span style={{ color: "var(--primary-300)" }}>Local</span>
             </div>
           </div>
         </div>

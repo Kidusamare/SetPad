@@ -1,0 +1,255 @@
+/* Quick Actions - Floating Action Button */
+.quick-actions {
+  position: fixed;
+  bottom: var(--space-8);
+  right: var(--space-8);
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+/* Backdrop */
+.quick-actions-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: -1;
+}
+
+/* Action Items Container */
+.quick-actions-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all var(--transition-normal);
+  pointer-events: none;
+}
+
+.quick-actions.expanded .quick-actions-items {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Individual Action Items */
+.quick-action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  color: var(--primary-100);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+  transform: translateX(100px);
+  animation: slideInRight var(--transition-normal) ease-out var(--delay) forwards;
+  box-shadow: var(--shadow-lg);
+}
+
+.quick-action-item:hover {
+  background: var(--primary-700);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateX(-4px) scale(1.05);
+  box-shadow: var(--shadow-glow);
+}
+
+.quick-action-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quick-action-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.quick-action-label {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Main Toggle Button */
+.quick-actions-toggle {
+  width: 64px;
+  height: 64px;
+  border: none;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-actions-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  border-radius: 50%;
+}
+
+.quick-actions-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-glow-strong);
+}
+
+.quick-actions-toggle:hover::before {
+  opacity: 0.3;
+}
+
+.quick-actions-toggle:active {
+  transform: scale(0.95);
+}
+
+.toggle-icon {
+  width: 24px;
+  height: 24px;
+  color: white;
+  position: relative;
+  z-index: 1;
+  transition: transform var(--transition-normal);
+}
+
+.quick-actions.expanded .toggle-icon {
+  transform: rotate(45deg);
+}
+
+.toggle-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Animations */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .quick-actions {
+    bottom: var(--space-6);
+    right: var(--space-4);
+  }
+
+  .quick-actions-toggle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .toggle-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggle-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .quick-action-item {
+    padding: var(--space-4);
+    font-size: var(--font-size-xs);
+  }
+
+  .quick-action-label {
+    display: none;
+  }
+
+  .quick-action-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions {
+    bottom: var(--space-4);
+    right: var(--space-3);
+  }
+
+  .quick-actions-toggle {
+    width: 52px;
+    height: 52px;
+  }
+
+  .quick-action-item {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .quick-action-item {
+    background: var(--primary-800);
+    border-color: var(--primary-600);
+  }
+
+  .quick-actions-toggle {
+    background: var(--accent-primary);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .quick-actions-items,
+  .quick-action-item,
+  .toggle-icon {
+    transition: none;
+    animation: none;
+  }
+
+  .quick-actions.expanded .quick-actions-items {
+    transform: none;
+  }
+
+  .quick-action-item {
+    transform: none;
+  }
+
+  .quick-action-item:hover {
+    transform: none;
+  }
+
+  .quick-actions-toggle:hover {
+    transform: none;
+  }
+}

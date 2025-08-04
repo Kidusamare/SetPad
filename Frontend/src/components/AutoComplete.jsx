@@ -100,6 +100,9 @@ export default function AutoComplete({
       case 'Escape':
         setIsOpen(false);
         break;
+      default:
+        // No action needed for other keys
+        break;
     }
   };
 
