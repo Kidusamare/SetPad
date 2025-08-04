@@ -130,14 +130,21 @@ export class AIService {
         }
 
         try {
+            // Helper function to get auth headers
+            const getAuthHeaders = () => {
+                const token = localStorage.getItem('token');
+                return {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` }),
+                    ...options.headers
+                };
+            };
+
             // Make API request
             const url = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${endpoint}`;
             const response = await fetch(url, {
                 method: options.method || 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
+                headers: getAuthHeaders(),
                 body: params && Object.keys(params).length > 0 ? JSON.stringify(params) : undefined,
                 ...options
             });

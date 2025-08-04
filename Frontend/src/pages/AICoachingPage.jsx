@@ -102,7 +102,7 @@ const AICoachingPage = () => {
     ];
 
     const handleQuickAction = (action) => {
-        setInputMessage(action.substring(2)); // Remove emoji
+        setInputMessage(action); // Remove emoji
         inputRef.current?.focus();
     };
 

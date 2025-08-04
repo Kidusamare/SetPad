@@ -244,40 +244,82 @@ Set (Individual Set)
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd fitness-tracker-frontend/backend
+   cd fitness-tracker-frontend
    ```
 
-2. **Create virtual environment**
+2. **Backend Setup**
    ```bash
+   cd Backend  # Note: Use uppercase 'Backend' directory
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   venv\Scripts\activate  # On Windows
+   # source venv/bin/activate  # On Linux/Mac
    ```
 
-3. **Install dependencies**
+3. **Install backend dependencies**
    ```bash
    pip install -r requirements.txt
+   pip install "bcrypt<4.0"  # Fix bcrypt compatibility issue
    ```
 
-4. **Set up environment variables**
+4. **Create test user (required for AI coaching)**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   python create_test_user.py
    ```
 
-5. **Initialize database**
+5. **Set up environment variables**
    ```bash
-   # Database is automatically created on first run
-   python main.py
+   # Create .env file in Backend directory
+   echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
+   echo "DATABASE_URL=sqlite:///./data.db" >> .env
    ```
 
-6. **Run the application**
+6. **Run the backend server**
    ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   # IMPORTANT: Run from Backend directory (uppercase)
+   uvicorn main:app --reload --host 127.0.0.1 --port 8000
    ```
+
+7. **Frontend Setup (in separate terminal)**
+   ```bash
+   cd Frontend
+   npm install
+   npm start
+   ```
+
+### Important Setup Notes
+
+#### Directory Structure Issue
+⚠️ **Critical**: The project has two backend directories:
+- `backend/` (lowercase) - Old/incomplete version
+- `Backend/` (uppercase) - Current version with authentication
+
+**Always run the server from the `Backend/` directory (uppercase)** to ensure:
+- Authentication works properly
+- AI coaching endpoints function correctly  
+- Database contains the required user accounts
+
+#### Authentication Setup
+The system requires authentication for AI coaching features:
+- Test user credentials: `username: testuser`, `password: password123`
+- Create additional users via `/auth/register` endpoint
+- Login endpoint: `POST /auth/token` (not `/auth/login`)
+
+#### Common Issues and Solutions
+
+**AI Coaching Network Errors:**
+- Ensure server is running from `Backend/` directory (uppercase)
+- Verify bcrypt version: `pip install "bcrypt<4.0"`
+- Check test user exists: `python create_test_user.py`
+- Confirm authentication works: Test `POST /auth/token` endpoint
+
+**Database Issues:**
+- Different directories use different database files
+- `Backend/data.db` contains authentication users
+- `backend/data.db` is outdated and missing auth data
 
 ## Environment Variables
 
-Create a `.env` file in the backend directory:
+Create a `.env` file in the `Backend/` directory (uppercase):
 
 ```env
 # OpenAI Configuration
@@ -408,22 +450,114 @@ Smart suggestions based on:
 # Health check
 curl http://localhost:8000/
 
-# Get all workouts
-curl http://localhost:8000/tables
+# Authentication (required for protected endpoints)
+curl -X POST http://localhost:8000/auth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=testuser&password=password123"
 
-# Create workout
+# Get all workouts (requires authentication)
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" http://localhost:8000/tables
+
+# Create workout (requires authentication)
 curl -X POST http://localhost:8000/tables \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{"id":"test_workout","tableName":"Test","date":"2025-01-26","rows":[]}'
 
-# AI coaching
+# AI coaching (requires authentication)
 curl -X POST http://localhost:8000/ai-coaching \
   -H "Content-Type: application/json" \
-  -d '{"message":"What is progressive overload?"}'
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{"message":"What is progressive overload?","conversation_history":[],"user_data":null}'
 ```
 
 ### Using Swagger UI
 Visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Troubleshooting
+
+### AI Coaching Network Errors
+
+**Problem**: AI coaching chat returns network errors or "Not authenticated" messages.
+
+**Root Cause**: The backend server was running from the wrong directory (`backend/` instead of `Backend/`), causing authentication failures due to database mismatch.
+
+**Solution**:
+1. **Stop any running servers**:
+   ```bash
+   # On Windows
+   taskkill /f /im python.exe
+   
+   # On Linux/Mac  
+   pkill -f uvicorn
+   ```
+
+2. **Ensure correct directory**:
+   ```bash
+   cd Backend  # Uppercase 'B' is critical
+   ```
+
+3. **Fix bcrypt compatibility**:
+   ```bash
+   pip install "bcrypt<4.0" --upgrade
+   ```
+
+4. **Verify test user exists**:
+   ```bash
+   python create_test_user.py
+   ```
+
+5. **Start server from correct directory**:
+   ```bash
+   uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+   ```
+
+6. **Test authentication**:
+   ```bash
+   curl -X POST http://localhost:8000/auth/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "username=testuser&password=password123"
+   ```
+
+**Verification**: You should receive a JWT token response like:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+### Database Issues
+
+**Problem**: Users or workouts not found, authentication fails.
+
+**Cause**: Multiple database files in different directories.
+
+**Solution**:
+- Use `Backend/data.db` (contains authentication users)
+- Avoid `backend/data.db` (outdated, missing auth data)
+- Always run server from `Backend/` directory
+
+### Frontend Connection Issues
+
+**Problem**: Frontend shows "Network Error" when accessing AI coaching.
+
+**Solution**:
+1. Verify backend is running on `http://localhost:8000`
+2. Check CORS settings allow `http://localhost:3000`
+3. Ensure authentication context is properly configured
+4. Test login flow before accessing AI coaching
+
+### bcrypt Version Compatibility
+
+**Problem**: `AttributeError: module 'bcrypt' has no attribute '__about__'`
+
+**Solution**:
+```bash
+pip install "bcrypt<4.0" --upgrade
+```
+
+This downgrades bcrypt to a compatible version that works with the current passlib configuration.
 
 ## Performance Considerations
 
