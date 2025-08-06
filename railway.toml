@@ -1,26 +1,21 @@
-[build]
+[[services]]
+name = "backend"
+source = "Backend"
+
+[services.build]
 builder = "NIXPACKS"
 
-[deploy]
+[services.deploy]
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 
 [[services]]
-name = "backend"
-source = "Backend"
-rootDirectory = "Backend"
-
-[services.healthcheck]
-path = "/"
-port = 8000
-
-[[services]]
 name = "frontend" 
 source = "Frontend"
-rootDirectory = "Frontend"
 
 [services.build]
+builder = "NIXPACKS"
 buildCommand = "npm run build"
 
 [services.deploy]
