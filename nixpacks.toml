@@ -3,7 +3,7 @@ NODE_VERSION = "18"
 PYTHON_VERSION = "3.11"
 
 [phases.setup]
-nixPkgs = ["python311", "nodejs-18_x", "gcc", "pip"]
+nixPkgs = ["python311", "nodejs-18_x", "gcc"]
 
 [phases.install]
 cmds = [
