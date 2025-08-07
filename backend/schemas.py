@@ -6,7 +6,7 @@ class SetSchema(BaseModel):
     reps: str
     weight: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RowSchema(BaseModel):
     id: Optional[int] = None
@@ -17,7 +17,7 @@ class RowSchema(BaseModel):
     showNotes: Optional[bool] = False
     weightUnit: Optional[str] = "lbs"
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TableSchema(BaseModel):
     id: str
@@ -25,7 +25,7 @@ class TableSchema(BaseModel):
     date: str
     rows: List[RowSchema]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MessageSchema(BaseModel):
     id: Optional[int] = None
