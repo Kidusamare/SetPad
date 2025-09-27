@@ -17,7 +17,7 @@ export const useAutoSave = (saveFunction, data, delay = 2000, enabled = true) =>
     const lastSavedTimeRef = useRef(null);
 
     // Create a stable save function that doesn't change on every render
-    const stableSaveFunction = useCallback(saveFunction, []);
+    const stableSaveFunction = useCallback(saveFunction, [saveFunction]);
 
     // Manual save function that can be called immediately
     const manualSave = useCallback(async () => {

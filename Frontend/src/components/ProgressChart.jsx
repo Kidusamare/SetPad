@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const ProgressChart = ({ data, title, type = 'weight', height = 200 }) => {

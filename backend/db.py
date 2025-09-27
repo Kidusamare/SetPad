@@ -1,11 +1,15 @@
+from collections import Counter
+import os
+from datetime import UTC, datetime
+from typing import Optional
+
 from sqlalchemy import create_engine, desc, text
 from sqlalchemy.orm import sessionmaker, Session
+
 from models import Base, Table as TableModelDB, Row as RowModelDB, Set as SetModelDB
 from schemas import TableSchema, RowSchema, SetSchema
 from pydantic import ValidationError
-import os
 from dotenv import load_dotenv
-from datetime import datetime
 
 load_dotenv()
 
@@ -66,70 +70,26 @@ def get_db():
         db.close()
 
 def get_sort_order_for_date(date_str: str, db: Session) -> int:
-    """Calculate the appropriate sort_order for a given date using binary search approach"""
+    """Calculate a deterministic sort_order value for the provided date."""
+
     try:
-        # Convert date string to datetime for comparison
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
-        # If date format is invalid, put it at the end
-        try:
-            max_order = db.query(TableModelDB.sort_order).order_by(desc(TableModelDB.sort_order)).first()
-            return (max_order[0] + 1) if max_order and max_order[0] is not None else 1
-        except Exception:
-            # If sort_order column doesn't exist yet, return default
-            return 1000
-    
-    # Get all tables ordered by date and sort_order
-    try:
-        existing_tables = db.query(TableModelDB).order_by(desc(TableModelDB.date), desc(TableModelDB.sort_order)).all()
-    except Exception:
-        # If sort_order column doesn't exist yet, just use date ordering
-        existing_tables = db.query(TableModelDB).order_by(desc(TableModelDB.date)).all()
-    
-    if not existing_tables:
-        return 1  # First table
-    
-    # Binary search to find insertion position
-    left, right = 0, len(existing_tables) - 1
-    insert_pos = len(existing_tables)  # Default to end
-    
-    while left <= right:
-        mid = (left + right) // 2
-        try:
-            mid_date = datetime.strptime(existing_tables[mid].date, "%Y-%m-%d")
-        except ValueError:
-            # Skip invalid dates
-            left = mid + 1
-            continue
-            
-        if target_date > mid_date:
-            # Target date is newer, should be inserted before this position
-            insert_pos = mid
-            right = mid - 1
-        elif target_date < mid_date:
-            # Target date is older, continue searching right
-            left = mid + 1
-        else:
-            # Same date, insert with next sort_order for that date
-            same_date_tables = [t for t in existing_tables if t.date == date_str]
-            if same_date_tables:
-                max_sort_order = max(t.sort_order or 0 for t in same_date_tables)
-                return max_sort_order + 1
-            else:
-                return existing_tables[mid].sort_order + 1
-    
-    # Calculate sort_order based on insertion position
-    if insert_pos == 0:
-        # Insert at the beginning (newest)
-        return (existing_tables[0].sort_order or 0) + 1000
-    elif insert_pos == len(existing_tables):
-        # Insert at the end (oldest)
-        return (existing_tables[-1].sort_order or 0) - 1000 if existing_tables[-1].sort_order and existing_tables[-1].sort_order > 1000 else 1
-    else:
-        # Insert between two positions
-        prev_order = existing_tables[insert_pos - 1].sort_order or 0
-        next_order = existing_tables[insert_pos].sort_order or 0
-        return (prev_order + next_order) // 2 if abs(prev_order - next_order) > 1 else prev_order - 1
+        max_order = db.query(TableModelDB.sort_order).order_by(desc(TableModelDB.sort_order)).first()
+        return (max_order[0] + 1000) if max_order and max_order[0] is not None else 1000
+
+    base_value = int(target_date.strftime("%Y%m%d")) * 1000
+
+    same_day_order = (
+        db.query(TableModelDB.sort_order)
+        .filter(TableModelDB.date == date_str, TableModelDB.sort_order.isnot(None))
+        .order_by(desc(TableModelDB.sort_order))
+        .first()
+    )
+    if same_day_order and same_day_order[0] >= base_value:
+        return same_day_order[0] + 1
+
+    return base_value
 
 def db_table_to_schema(table: TableModelDB) -> TableSchema:
     """Convert SQLAlchemy Table model to Pydantic TableSchema"""
@@ -227,40 +187,66 @@ def insert_table_schema_to_db(table_schema: dict, db: Session):
     db.commit()
     db.refresh(db_table)
 
-def analyze_user_workouts(db: Session) -> dict:
-    """Analyze user's workout data for personalized coaching and insights"""
+def _safe_parse_date(date_str: Optional[str]) -> Optional[datetime]:
+    if not date_str:
+        return None
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def analyze_user_workouts(db: Session, user_id: Optional[int] = None) -> dict:
+    """Analyze workout data with safe defaults for empty datasets."""
+
     try:
-        # Get all user tables
-        tables = db.query(TableModelDB).all()
-        
-        if not tables:
-            return {"message": "No workout data found"}
-        
-        # Basic analytics
-        total_workouts = len(tables)
-        recent_workouts = [t for t in tables if t.date >= "2024-01-01"]  # This year
-        
-        # Get exercise frequency
-        exercise_count = {}
-        muscle_groups = {}
-        
-        for table in tables:
-            for row in table.rows:
-                exercise_count[row.exercise] = exercise_count.get(row.exercise, 0) + 1
-                muscle_groups[row.muscleGroup] = muscle_groups.get(row.muscleGroup, 0) + 1
-        
-        # Most frequent exercises and muscle groups
-        top_exercises = sorted(exercise_count.items(), key=lambda x: x[1], reverse=True)[:5]
-        top_muscle_groups = sorted(muscle_groups.items(), key=lambda x: x[1], reverse=True)[:5]
-        
-        return {
-            "total_workouts": total_workouts,
-            "recent_workouts": len(recent_workouts),
-            "top_exercises": top_exercises,
-            "top_muscle_groups": top_muscle_groups,
-            "last_workout": tables[-1].date if tables else None
+        query = db.query(TableModelDB)
+        if user_id is not None:
+            query = query.filter(TableModelDB.user_id == user_id)
+
+        tables = query.all()
+
+        base_response = {
+            "total_workouts": len(tables),
+            "recent_workouts": 0,
+            "top_exercises": [],
+            "top_muscle_groups": [],
+            "last_workout": None,
         }
-        
+
+        if not tables:
+            base_response["message"] = "No workout data found"
+            return base_response
+
+        exercise_counter: Counter[str] = Counter()
+        muscle_counter: Counter[str] = Counter()
+        parsed_dates = []
+
+        current_year = datetime.now(UTC).year
+
+        for table in tables:
+            parsed_date = _safe_parse_date(table.date)
+            if parsed_date:
+                parsed_dates.append(parsed_date)
+                if parsed_date.year == current_year:
+                    base_response["recent_workouts"] += 1
+
+            for row in table.rows:
+                if row.exercise:
+                    exercise_counter[row.exercise] += 1
+                if row.muscleGroup:
+                    muscle_counter[row.muscleGroup] += 1
+
+        if parsed_dates:
+            base_response["last_workout"] = max(parsed_dates).strftime("%Y-%m-%d")
+
+        base_response["top_exercises"] = exercise_counter.most_common(5)
+        base_response["top_muscle_groups"] = muscle_counter.most_common(5)
+
+        return base_response
+
     except Exception as e:
         return {"error": str(e)}
 
@@ -298,7 +284,7 @@ between SQLAlchemy models and Pydantic schemas.
   - Includes duplicate prevention logic
 
 #### Analytics Functions
-- **analyze_user_workouts(db: Session) -> dict**
+- **analyze_user_workouts(db: Session, user_id: Optional[int] = None) -> dict**
   - Analyzes user workout patterns and statistics
   - Used in: AI coaching, progress tracking
   - Returns: workout counts, exercise frequency, muscle group distribution

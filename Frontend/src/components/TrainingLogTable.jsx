@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
 import TrainingLogRow from "./TrainingLogRow";
 import WorkoutTemplates from "./WorkoutTemplates";
@@ -13,7 +12,6 @@ const manager = new TrainingLogManager();
 export default function TrainingLogTable() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { theme } = useTheme();
     const [log, setLog] = useState(null);
     const [muscleGroupSuggestions, setMuscleGroupSuggestions] = useState([]);
     const [exerciseSuggestions, setExerciseSuggestions] = useState([]);

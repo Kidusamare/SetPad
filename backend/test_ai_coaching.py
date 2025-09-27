@@ -29,7 +29,7 @@ def test_ai_coaching():
         
         # Test analytics
         print("\n1. Testing analyze_user_workouts...")
-        analytics = analyze_user_workouts(user.id, db)
+        analytics = analyze_user_workouts(db, user_id=user.id)
         print(f"Analytics result: {analytics}")
         
         # Test AI coaching

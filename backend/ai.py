@@ -1,23 +1,39 @@
-import openai
-import os
 import json
+import os
 import re
 import tempfile
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
+
+import openai
 from fastapi import UploadFile
 from dotenv import load_dotenv
+
 from schemas import MessageSchema
-from db import analyze_user_workouts
 
 load_dotenv()
 
-# Get OpenAI API key from environment variables
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
 
-client = openai.OpenAI(api_key=openai_api_key)
+class AIConfigurationError(RuntimeError):
+    """Raised when AI functionality is invoked without proper configuration."""
+
+
+_client = None
+_client_api_key: Optional[str] = None
+
+
+def _get_openai_client() -> openai.OpenAI:
+    global _client, _client_api_key
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise AIConfigurationError("OPENAI_API_KEY environment variable is required for AI features")
+
+    if _client is None or api_key != _client_api_key:
+        _client = openai.OpenAI(api_key=api_key)
+        _client_api_key = api_key
+
+    return _client
 
 def save_uploaded_file_to_temp(upload_file: UploadFile) -> str:
     """Save the uploaded file to a temp file and return the path"""
@@ -92,6 +108,7 @@ BULK WORKOUT DATA:
 {raw_text[:2500]}"""
 
     try:
+        client = _get_openai_client()
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
@@ -119,6 +136,8 @@ BULK WORKOUT DATA:
         # Fallback: create multiple workouts from the raw data
         return create_bulk_workouts_from_text(raw_text)
         
+    except AIConfigurationError as config_error:
+        return create_bulk_workouts_from_text(raw_text, error=str(config_error))
     except Exception as e:
         # Create bulk workouts as fallback
         return create_bulk_workouts_from_text(raw_text, error=str(e))
@@ -323,17 +342,26 @@ Guidelines:
         context_messages.append({"role": "user", "content": message})
         
         # Call OpenAI API
+        client = _get_openai_client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=context_messages,
             max_tokens=800,
             temperature=0.7,
         )
-        
+
         return response.choices[0].message.content.strip()
-        
+
+    except AIConfigurationError:
+        return (
+            "AI coaching is not configured. Please provide an OpenAI API key to enable"
+            " personalized coaching responses."
+        )
     except Exception as e:
-        return f"I'm having trouble connecting right now. Please make sure I'm properly configured and try again. Technical details: {str(e)}"
+        return (
+            "I'm having trouble connecting right now. Please make sure I'm properly configured"
+            f" and try again. Technical details: {str(e)}"
+        )
 
 def generate_ai_workout_analysis(analytics: dict) -> str:
     """Generate AI insights from workout analytics"""
@@ -354,15 +382,18 @@ Provide specific, actionable insights about:
 Keep it concise and encouraging."""
 
     try:
+        client = _get_openai_client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": insight_prompt}],
             max_tokens=400,
             temperature=0.6,
         )
-        
+
         return response.choices[0].message.content.strip()
-        
+
+    except AIConfigurationError:
+        return "AI insights are unavailable because no OpenAI API key is configured."
     except Exception:
         return "Unable to generate AI insights at this time."
 
@@ -399,15 +430,18 @@ Format each exercise as: Exercise Name - Sets x Reps (Rest time)
 Include progression tips and safety notes."""
 
     try:
+        client = _get_openai_client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": workout_prompt}],
             max_tokens=1000,
             temperature=0.7,
         )
-        
+
         return response.choices[0].message.content.strip()
-        
+
+    except AIConfigurationError:
+        return "Workout plan generation is disabled without an OpenAI API key."
     except Exception as e:
         return f"Sorry, I couldn't generate a workout plan right now. Error: {str(e)}"
 
@@ -479,6 +513,7 @@ Available exercises: {', '.join(suggestions[:10])}
 
 Return only the exercise names, one per line."""
 
+            client = _get_openai_client()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": ai_prompt}],
@@ -493,6 +528,9 @@ Return only the exercise names, one per line."""
             filtered_ai = [s for s in ai_suggestions if s in base_exercises]
             suggestions = filtered_ai + [s for s in suggestions if s not in filtered_ai]
             
+        except AIConfigurationError:
+            # Fall back to database suggestions when AI is not configured
+            return suggestions[:6]
         except Exception as ai_error:
             print(f"AI suggestion error: {ai_error}")
             # Fall back to database suggestions

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../context/ThemeContext";
 import TrainingLogManager from "./TrainingLogManager";
 import { SkeletonLoader } from "./LoadingSpinner";
 import { DataExportService } from "../services/dataExport";
@@ -9,7 +8,6 @@ const manager = new TrainingLogManager();
 
 export default function SavedTablesPage({ previewMode = false }) {
     const navigate = useNavigate();
-    const { theme } = useTheme();
     const [tables, setTables] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, tableId: null, tableName: "" });

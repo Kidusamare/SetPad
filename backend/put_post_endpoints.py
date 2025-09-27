@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from schemas import TableSchema, AICoachingRequest, AICoachingResponse
 from models import Table as TableModelDB, Row as RowModelDB, Set as SetModelDB
 from db import get_db, create_db_table_from_schema, insert_table_schema_to_db, analyze_user_workouts, db_table_to_schema, SessionLocal
@@ -162,16 +162,34 @@ def import_data_simple(file: UploadFile = File(...)):
 def ai_coaching_chat(request: AICoachingRequest, db: Session = Depends(get_db)) -> AICoachingResponse:
     """Main AI coaching chat endpoint"""
     try:
+        user_id: Optional[int] = None
+        if request.user_data and isinstance(request.user_data, dict):
+            user_id = request.user_data.get("user_id")
+
         # Get user workout analytics for context
-        user_analytics = analyze_user_workouts(db)
-        
+        user_analytics = analyze_user_workouts(db, user_id=user_id)
+
+        if "error" in user_analytics:
+            raise HTTPException(status_code=500, detail=user_analytics["error"])
+
         # Enhanced message with user context
         enhanced_message = request.message
-        if user_analytics and "error" not in user_analytics:
-            context_info = f"\n\nUser Context: {user_analytics['total_workouts']} total workouts, "
-            context_info += f"last workout: {user_analytics.get('last_workout', 'unknown')}, "
-            context_info += f"frequent exercises: {[ex[0] for ex in user_analytics.get('top_exercises', [])[:3]]}"
-            enhanced_message += context_info
+        context_segments: List[str] = []
+
+        total_workouts = user_analytics.get("total_workouts", 0)
+        if total_workouts:
+            context_segments.append(f"{total_workouts} total workouts")
+        else:
+            context_segments.append("No workouts logged yet")
+
+        last_workout = user_analytics.get("last_workout") or "unknown"
+        context_segments.append(f"last workout: {last_workout}")
+
+        top_exercises = [ex[0] for ex in user_analytics.get("top_exercises", []) if ex]
+        if top_exercises:
+            context_segments.append(f"frequent exercises: {', '.join(top_exercises[:3])}")
+
+        enhanced_message += f"\n\nUser Context: {', '.join(context_segments)}"
         
         # Get AI response
         ai_response = get_ai_coaching_response(
@@ -189,11 +207,12 @@ def generate_workout_plan(request: dict, db: Session = Depends(get_db)):
     """Generate a custom workout plan based on user preferences"""
     try:
         # Get user's workout history for context
-        user_analytics = analyze_user_workouts(db)
-        
+        user_id = request.get("user_id")
+        user_analytics = analyze_user_workouts(db, user_id=user_id)
+
         # Generate AI workout plan
         workout_plan = generate_ai_workout_plan(request, user_analytics)
-        
+
         return {
             "workout_plan": workout_plan,
             "parameters": {

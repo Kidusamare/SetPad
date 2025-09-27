@@ -1,7 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { InlineSpinner } from "./LoadingSpinner";
 import AIService from "../services/aiCacheService";
+
+const EXERCISE_DATABASE = {
+    "Chest": [
+        "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Press",
+        "Incline Dumbbell Press", "Dumbbell Flyes", "Incline Flyes", "Cable Flyes",
+        "Push-ups", "Dips", "Chest Press Machine", "Pec Deck", "Cable Crossover"
+    ],
+    "Back": [
+        "Deadlift", "Pull-ups", "Chin-ups", "Barbell Rows", "Dumbbell Rows",
+        "T-Bar Rows", "Cable Rows", "Lat Pulldowns", "Face Pulls", "Reverse Flyes",
+        "Hyperextensions", "Good Mornings", "Shrugs"
+    ],
+    "Shoulders": [
+        "Overhead Press", "Military Press", "Dumbbell Press", "Arnold Press",
+        "Lateral Raises", "Front Raises", "Rear Delt Flyes", "Upright Rows",
+        "Pike Push-ups", "Handstand Push-ups", "Cable Lateral Raises"
+    ],
+    "Legs": [
+        "Squat", "Front Squat", "Leg Press", "Lunges", "Bulgarian Split Squats",
+        "Romanian Deadlift", "Leg Curls", "Leg Extensions", "Calf Raises",
+        "Walking Lunges", "Step-ups", "Wall Sits", "Single Leg Deadlifts"
+    ],
+    "Biceps": [
+        "Barbell Curls", "Dumbbell Curls", "Hammer Curls", "Cable Curls",
+        "Preacher Curls", "Concentration Curls", "21s", "Chin-ups"
+    ],
+    "Triceps": [
+        "Close-Grip Bench Press", "Tricep Dips", "Overhead Tricep Extension",
+        "Tricep Pushdowns", "Diamond Push-ups", "Skull Crushers", "French Press"
+    ],
+    "Abs": [
+        "Plank", "Crunches", "Bicycle Crunches", "Russian Twists", "Mountain Climbers",
+        "Hanging Leg Raises", "Ab Wheel", "Dead Bug", "Hollow Body Hold"
+    ],
+    "Glutes": [
+        "Hip Thrusts", "Glute Bridges", "Romanian Deadlift", "Bulgarian Split Squats",
+        "Clamshells", "Monster Walks", "Fire Hydrants", "Glute Ham Raise"
+    ],
+    "Calves": [
+        "Calf Raises", "Seated Calf Raises", "Donkey Calf Raises", "Jump Rope",
+        "Box Jumps", "Single Leg Calf Raises"
+    ]
+};
 
 const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) => {
     const { theme } = useTheme();
@@ -10,56 +53,22 @@ const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) 
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [cacheInfo, setCacheInfo] = useState({ fromCache: false });
 
-    // Exercise database by muscle group
-    const exerciseDatabase = {
-        "Chest": [
-            "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Press",
-            "Incline Dumbbell Press", "Dumbbell Flyes", "Incline Flyes", "Cable Flyes",
-            "Push-ups", "Dips", "Chest Press Machine", "Pec Deck", "Cable Crossover"
-        ],
-        "Back": [
-            "Deadlift", "Pull-ups", "Chin-ups", "Barbell Rows", "Dumbbell Rows",
-            "T-Bar Rows", "Cable Rows", "Lat Pulldowns", "Face Pulls", "Reverse Flyes",
-            "Hyperextensions", "Good Mornings", "Shrugs"
-        ],
-        "Shoulders": [
-            "Overhead Press", "Military Press", "Dumbbell Press", "Arnold Press",
-            "Lateral Raises", "Front Raises", "Rear Delt Flyes", "Upright Rows",
-            "Pike Push-ups", "Handstand Push-ups", "Cable Lateral Raises"
-        ],
-        "Legs": [
-            "Squat", "Front Squat", "Leg Press", "Lunges", "Bulgarian Split Squats",
-            "Romanian Deadlift", "Leg Curls", "Leg Extensions", "Calf Raises",
-            "Walking Lunges", "Step-ups", "Wall Sits", "Single Leg Deadlifts"
-        ],
-        "Biceps": [
-            "Barbell Curls", "Dumbbell Curls", "Hammer Curls", "Cable Curls",
-            "Preacher Curls", "Concentration Curls", "21s", "Chin-ups"
-        ],
-        "Triceps": [
-            "Close-Grip Bench Press", "Tricep Dips", "Overhead Tricep Extension",
-            "Tricep Pushdowns", "Diamond Push-ups", "Skull Crushers", "French Press"
-        ],
-        "Abs": [
-            "Plank", "Crunches", "Bicycle Crunches", "Russian Twists", "Mountain Climbers",
-            "Hanging Leg Raises", "Ab Wheel", "Dead Bug", "Hollow Body Hold"
-        ],
-        "Glutes": [
-            "Hip Thrusts", "Glute Bridges", "Romanian Deadlift", "Bulgarian Split Squats",
-            "Clamshells", "Monster Walks", "Fire Hydrants", "Glute Ham Raise"
-        ],
-        "Calves": [
-            "Calf Raises", "Seated Calf Raises", "Donkey Calf Raises", "Jump Rope",
-            "Box Jumps", "Single Leg Calf Raises"
-        ]
-    };
-
     // AI-powered suggestions based on workout context
-    const getAISuggestions = async (muscleGroup, currentExercise) => {
+    const getLocalSuggestions = useCallback((group, currentExerciseName) => {
+        const exercises = EXERCISE_DATABASE[group] || [];
+        return exercises
+            .filter(candidate =>
+                candidate.toLowerCase() !== currentExerciseName.toLowerCase() &&
+                candidate.toLowerCase().includes(currentExerciseName.toLowerCase().split(' ')[0])
+            )
+            .slice(0, 5);
+    }, []);
+
+    const getAISuggestions = useCallback(async (group, exercise) => {
         setIsLoading(true);
         try {
             // Use cached AI service for exercise suggestions
-            const result = await AIService.getExerciseSuggestions(muscleGroup, currentExercise);
+            const result = await AIService.getExerciseSuggestions(group, exercise);
             
             setCacheInfo({ fromCache: result.fromCache });
             console.log(`[Smart Suggestions] ${result.fromCache ? 'Using cached suggestions' : 'Fetched new suggestions'}`);
@@ -75,41 +84,31 @@ const SmartSuggestions = ({ muscleGroup, currentExercise, onSuggestionSelect }) 
         }
         
         // Fallback to local database
-        return getLocalSuggestions(muscleGroup, currentExercise);
-    };
-
-    const getLocalSuggestions = (muscleGroup, currentExercise) => {
-        const exercises = exerciseDatabase[muscleGroup] || [];
-        return exercises
-            .filter(exercise => 
-                exercise.toLowerCase() !== currentExercise.toLowerCase() &&
-                exercise.toLowerCase().includes(currentExercise.toLowerCase().split(' ')[0])
-            )
-            .slice(0, 5);
-    };
-
-    const fetchSuggestions = async () => {
-        if (!muscleGroup || muscleGroup.length < 2) {
-            setSuggestions([]);
-            return;
-        }
-
-        const aiSuggestions = await getAISuggestions(muscleGroup, currentExercise);
-        const localSuggestions = getLocalSuggestions(muscleGroup, currentExercise);
-        
-        // Combine and deduplicate suggestions
-        const combinedSuggestions = [...new Set([...aiSuggestions, ...localSuggestions])];
-        setSuggestions(combinedSuggestions.slice(0, 6));
-        setIsLoading(false);
-    };
+        return getLocalSuggestions(group, exercise);
+    }, [getLocalSuggestions]);
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
+            const fetchSuggestions = async () => {
+                if (!muscleGroup || muscleGroup.length < 2) {
+                    setSuggestions([]);
+                    setIsLoading(false);
+                    return;
+                }
+
+                const aiSuggestions = await getAISuggestions(muscleGroup, currentExercise);
+                const localSuggestions = getLocalSuggestions(muscleGroup, currentExercise);
+
+                const combinedSuggestions = [...new Set([...aiSuggestions, ...localSuggestions])];
+                setSuggestions(combinedSuggestions.slice(0, 6));
+                setIsLoading(false);
+            };
+
             fetchSuggestions();
         }, 300); // Debounce suggestions
 
         return () => clearTimeout(timeoutId);
-    }, [muscleGroup, currentExercise]);
+    }, [muscleGroup, currentExercise, getAISuggestions, getLocalSuggestions]);
 
     const handleSuggestionClick = (suggestion) => {
         onSuggestionSelect(suggestion);
@@ -229,13 +228,7 @@ export const ProgressionSuggestions = ({ currentSets, exercise, onSuggestionAppl
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    useEffect(() => {
-        if (currentSets && currentSets.length > 0) {
-            generateProgressionSuggestions();
-        }
-    }, [currentSets, exercise]);
-
-    const generateProgressionSuggestions = () => {
+    const generateProgressionSuggestions = useCallback(() => {
         const suggestions = [];
         
         if (currentSets.length > 0) {
@@ -278,7 +271,15 @@ export const ProgressionSuggestions = ({ currentSets, exercise, onSuggestionAppl
         }
 
         setSuggestions(suggestions);
-    };
+    }, [currentSets]);
+
+    useEffect(() => {
+        if (currentSets && currentSets.length > 0) {
+            generateProgressionSuggestions();
+        } else {
+            setSuggestions([]);
+        }
+    }, [currentSets, generateProgressionSuggestions]);
 
     const applySuggestion = (suggestion) => {
         onSuggestionApply(suggestion.sets);

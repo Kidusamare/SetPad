@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { SearchService } from '../services/searchService';
@@ -24,42 +24,54 @@ const SearchComponent = ({ isFullPage = false, onClose = null }) => {
 
     // Load workouts on component mount
     useEffect(() => {
+        const loadWorkouts = async () => {
+            try {
+                const tables = await manager.listTables();
+                const fullWorkouts = await Promise.all(
+                    tables.map(async (table) => {
+                        const fullTable = await manager.loadTable(table.id);
+                        return {
+                            ...fullTable,
+                            date: table.date,
+                            tableName: table.tableName
+                        };
+                    })
+                );
+                setWorkouts(fullWorkouts);
+            } catch (error) {
+                console.error('Error loading workouts:', error);
+            }
+        };
+
+        const loadRecentSearches = () => {
+            try {
+                const recent = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+                setRecentSearches(recent.slice(0, 5));
+            } catch (error) {
+                console.error('Error loading recent searches:', error);
+            }
+        };
+
         loadWorkouts();
         loadRecentSearches();
         if (inputRef.current && !isFullPage) {
             inputRef.current.focus();
         }
-    }, []);
+    }, [isFullPage]);
 
     // Perform search when term or filters change
-    useEffect(() => {
-        if (searchTerm.trim()) {
-            performSearch();
-        } else {
-            setResults(null);
-        }
-    }, [searchTerm, filters, workouts]);
-
-    const loadWorkouts = async () => {
+    const saveRecentSearch = useCallback((term) => {
         try {
-            const tables = await manager.listTables();
-            const fullWorkouts = await Promise.all(
-                tables.map(async (table) => {
-                    const fullTable = await manager.loadTable(table.id);
-                    return {
-                        ...fullTable,
-                        date: table.date,
-                        tableName: table.tableName
-                    };
-                })
-            );
-            setWorkouts(fullWorkouts);
+            const recent = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+            const updated = [term, ...recent.filter(s => s !== term)].slice(0, 10);
+            localStorage.setItem('recent_searches', JSON.stringify(updated));
+            setRecentSearches(updated.slice(0, 5));
         } catch (error) {
-            console.error('Error loading workouts:', error);
+            console.error('Error saving recent search:', error);
         }
-    };
+    }, []);
 
-    const performSearch = async () => {
+    const performSearch = useCallback(async () => {
         setIsLoading(true);
         try {
             const searchFilters = {};
@@ -86,27 +98,15 @@ const SearchComponent = ({ isFullPage = false, onClose = null }) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [filters, workouts, searchTerm, saveRecentSearch]);
 
-    const loadRecentSearches = () => {
-        try {
-            const recent = JSON.parse(localStorage.getItem('recent_searches') || '[]');
-            setRecentSearches(recent.slice(0, 5));
-        } catch (error) {
-            console.error('Error loading recent searches:', error);
+    useEffect(() => {
+        if (searchTerm.trim()) {
+            performSearch();
+        } else {
+            setResults(null);
         }
-    };
-
-    const saveRecentSearch = (term) => {
-        try {
-            const recent = JSON.parse(localStorage.getItem('recent_searches') || '[]');
-            const updated = [term, ...recent.filter(s => s !== term)].slice(0, 10);
-            localStorage.setItem('recent_searches', JSON.stringify(updated));
-            setRecentSearches(updated.slice(0, 5));
-        } catch (error) {
-            console.error('Error saving recent search:', error);
-        }
-    };
+    }, [searchTerm, performSearch]);
 
     const handleWorkoutClick = (workout) => {
         navigate(`/log/${workout.id}`);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -11,7 +10,6 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

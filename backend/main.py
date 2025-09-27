@@ -50,6 +50,7 @@ app.add_middleware(
 # --- API Routes ---
 # GET endpoints
 app.get("/")(get_start_page)
+app.get("/health")(get_start_page)
 app.get("/tables", response_model=List[TableSchema])(get_tables)
 app.get("/tables/{table_id}", response_model=TableSchema)(get_table)
 app.get("/ai-coaching/workout-analysis")(get_workout_analysis)
@@ -81,5 +82,4 @@ def delete_table(table_id: str, db: Session = Depends(get_db)):
 # AI coaching functions moved to ai.py
 
 # AI coaching endpoints moved to put_post_endpoints.py
-
 

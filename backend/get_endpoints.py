@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from schemas import TableSchema, AICoachingResponse
 from models import Table as TableModelDB
 from db import get_db, db_table_to_schema, analyze_user_workouts
@@ -8,7 +8,7 @@ from ai import generate_ai_workout_analysis
 
 def get_start_page():
     """Root endpoint - API health check"""
-    return {"SetPad Backend Running"}
+    return {"status": "ok", "service": "SetPad Backend"}
 
 def get_tables(db: Session = Depends(get_db)) -> List[TableSchema]:
     """Get all workout tables efficiently ordered by sort_order (latest first)"""
@@ -32,10 +32,10 @@ def get_table(table_id: str, db: Session = Depends(get_db)) -> TableSchema:
         raise HTTPException(status_code=404, detail="Table not found")
     return db_table_to_schema(table)
 
-def get_workout_analysis(db: Session = Depends(get_db)):
+def get_workout_analysis(user_id: Optional[int] = None, db: Session = Depends(get_db)):
     """Get AI analysis of user's workout patterns"""
     try:
-        analytics = analyze_user_workouts(db)
+        analytics = analyze_user_workouts(db, user_id=user_id)
         
         if "error" in analytics:
             raise HTTPException(status_code=500, detail=analytics["error"])

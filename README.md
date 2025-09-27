@@ -319,22 +319,23 @@ The system requires authentication for AI coaching features:
 
 ## Environment Variables
 
-Create a `.env` file in the `Backend/` directory (uppercase):
+Place a `.env` file next to `backend/main.py` (the `backend/` directory). The service reads the following keys:
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | No (defaults to `sqlite:///./data.db`) | SQLAlchemy connection string. Set to PostgreSQL, etc., in production. |
+| `ENVIRONMENT` | No (`development` by default) | Toggle behaviour for different deployments. Use `production` to enable strict security checks. |
+| `SECRET_KEY` | Required when `ENVIRONMENT=production` | JWT signing secret. Must be a long, random string. If unset in non-prod, an ephemeral key is generated on startup. |
+| `OPENAI_API_KEY` | Required for AI features | Enables imports, coaching, workout planning, and suggestions. Without it, AI routes return graceful fallbacks. |
+
+Example `.env`:
 
 ```env
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Database Configuration  
+ENVIRONMENT=development
 DATABASE_URL=sqlite:///./data.db
-
-# Optional: For production deployments
-# DATABASE_URL=postgresql://user:password@localhost/dbname
+# SECRET_KEY=super-secret-string           # Uncomment and set for production
+# OPENAI_API_KEY=sk-...
 ```
-
-### Required Variables
-- **OPENAI_API_KEY**: Your OpenAI API key for AI features
-- **DATABASE_URL**: Database connection string (defaults to SQLite)
 
 ## Usage Examples
 
